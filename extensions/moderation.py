@@ -52,6 +52,26 @@ class Moderation():
         writeServer(s)
         await ctx.send("Join Message sucessfully changed to: " + msg)
 
+    @mod.command()
+    async def kick(self, ctx, id : int = None, *, msg : str = None):
+        if(id == None):
+            return await ctx.send("Missing id")
+        if(msg == None):
+            return await ctx.send("Please specify a reason for kicking this user")
+        user = ctx.guild.get_member(id)
+        if user is None:
+            return await ctx.send("User not Found")
+        if(s[str(ctx.guild.id)]["modRole"] in [r.name for r in user.roles]):
+            return await ctx.send("You can't kick this user")
+        await ctx.guild.kick(user)
+        if(s[str(ctx.guild.id)]["modChannel"] != 0):
+            e = discord.Embed(color=0x6428c8)
+            e.set_author(name = ctx.author.name, icon_url=ctx.author.avatar_url)
+            e.add_field(name="Kicked:", value=str(user), inline=False)
+            e.add_field(name="Reason:", value=msg, inline=False)
+            chan = self.bot.get_channel(s[str(ctx.guild.id)]["modChannel"])
+            await chan.send(embed=e)
+
     ### Admin Commands ###
     @admin.command()
     async def addMod(self, ctx, id : int = None):
