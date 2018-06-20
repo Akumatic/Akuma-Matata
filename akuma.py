@@ -84,6 +84,9 @@ async def unload(ctx, ext : str = None, json : bool = False):
 
 if __name__ == "__main__":
     #loads all extensions mentioned in settings.json
+    if(c["token"] == ""):
+        print("Please insert a Bot Token into settings.json first")
+        exit()
     for ext in c["extensions"]:
         try:
             bot.load_extension("extensions." + ext)
