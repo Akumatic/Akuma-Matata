@@ -1,11 +1,10 @@
-import json
-import discord
+import json, discord
 from discord.ext import commands
 
+#config files
 cFile = "settings.json"
 sFile = "server.json"
 
-#config file
 c = json.load(open(cFile, "r"))
 s = json.load(open(sFile, "r"))
     
@@ -49,7 +48,7 @@ async def load(ctx, ext : str = None, json : bool = False):
     
     First argument is the name of python file without .py extension.
     (Optional) If second argument is True, it will be autoloaded"""
-    if(ctx.author.id != ctx.guild.owner.id):
+    if(ctx.author.id != c["maintainer"]):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
@@ -65,7 +64,7 @@ async def load(ctx, ext : str = None, json : bool = False):
 @bot.command(hidden=True)
 async def reload(ctx, ext : str = None):
     """Reloads an extension"""    
-    if(ctx.author.id != ctx.guild.owner.id):
+    if(ctx.author.id != c["maintainer"]):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
@@ -86,7 +85,7 @@ async def unload(ctx, ext : str = None, json : bool = False):
     
     First argument is the name of the extension.
     (Optional) If second argument is True, it will be removed from autoload"""
-    if(ctx.author.id != ctx.guild.owner.id):
+    if(ctx.author.id != c["maintainer"]):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
