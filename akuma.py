@@ -5,7 +5,7 @@ from discord.ext import commands
 #config file
 c =  json.load(open("settings.json", "r"))
 #The Bot itself
-bot = commands.Bot(description=c["description"], command_prefix=c["prefix"], pm_help=c["pmHelp"])
+bot = commands.Bot(description=c["description"], command_prefix=c["prefix"])
 
 #Function to write changed config to JSON file
 def writeJSON(data):
