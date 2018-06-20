@@ -1,5 +1,6 @@
-import discord, json, akuma
+import discord, json
 from discord.ext import commands
+from akuma import c, writeJSON
 
 modCommands = """```Possible Commands:
     mod setJoinMessage <msg>
@@ -13,114 +14,127 @@ adminCommands = """```Possible Commands:
 ownerCommands = """```Possible Commands:
     owner addAdmin <id>
     owner rmAdmin <id>
-    owner load <ext>
-    owner unload <ext>
-    owner reload <ext>
     ```"""
 
 class Moderation():
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def suggest(self, ctx, *, msg : str):
-        """Makes a suggestion to the moderation team. 
-        
-        Planned: If there's no suggestionChannel specified, send a pm to the owner."""
-        await ctx.message.delete()
-        e = discord.Embed(color=0x6428c8)
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
-        e.add_field(name="Suggestion", value=msg)
-        if(akuma.c["suggestionChannel"] != 0):
-            chan = self.bot.get_channel(akuma.c["suggestionChannel"])
-            await chan.send(embed=e)
-        else:
-            await ctx.send(e)
-
-    ### Mod Commands ###
+    #Groups
     @commands.group()
     async def mod(self, ctx):
         """Commands usable a Mod"""
-        if (ctx.author.id not in akuma.c["mods"]): 
+        if (ctx.author.id not in c["mods"]): 
             return
         if ctx.invoked_subcommand is None:
             await ctx.send(modCommands)
 
-    @mod.command()
-    async def setJoinMessage(self, ctx, *, msg : str):
-        akuma.c["joinMessage"] = msg
-        akuma.writeJSON(akuma.c)
-        await ctx.send("Join Message sucessfully changed to: " + msg)
-
-    ### Admin Commands ###
     @commands.group()
     async def admin(self, ctx):
         """Commands usable by an Admin"""
-        if(ctx.author.id not in akuma.c["admins"]):
+        if(ctx.author.id not in c["admins"]):
             return
         if ctx.invoked_subcommand is None:
             await ctx.send(adminCommands)
+    
+    @commands.group()
+    async def owner(self, ctx):
+        """Commands usable by the Owner"""
+        if (ctx.author.id != ctx.guild.owner.id): 
+            return
+        if ctx.invoked_subcommand is None:
+            await ctx.send(ownerCommands)
 
+    ### Mod Commands ###
+    @mod.command()
+    async def setJoinMessage(self, ctx, *, msg : str):
+        c["joinMessage"] = msg
+        writeJSON(c)
+        await ctx.send("Join Message sucessfully changed to: " + msg)
+
+    ### Admin Commands ###
     @admin.command()
     async def addMod(self, ctx, id : int = None):
         if (id == None):
-            await ctx.send("Missing id")
-            return
-        if(id not in akuma.c["mods"]):
-            akuma.c["mods"].append(id)
-            akuma.writeJSON(akuma.c)
-            await ctx.send("Added user id " + str(id) + " to mods")
+            return await ctx.send("Missing id")
+        user = ctx.guild.get_member(id)
+        if user is None:
+            return await ctx.send("User not Found")
+        #Add Mod Role to User
+        if(c["modRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
+            await ctx.send("User " + user.name + " was added to " + c["modRole"])
         else:
-            return await ctx.send("User is already a mod")
+            return await ctx.send("User " + user.name + " is already in " + c["modRole"])
 
     @admin.command()
     async def rmMod(self, ctx, id : int = None):
         if (id == None):
             return await ctx.send("Missing id")
-        if(id in akuma.c["mods"]):
-            if(id in akuma.c["admins"] and ctx.author.id != akuma.c["owner"]):
-                return await ctx.send("You can't remove this ID")
-            else:
-                akuma.c["mods"].remove(id)
-                akuma.writeJSON(akuma.c)
+        user = ctx.guild.get_member(id)
+        if user is None:
+            return await ctx.send("User not Found")
+        if (user.id == ctx.author.id):
+            return await ctx.send("You can't remove yourself from Mods")
+        if(c["adminRole"] in [r.name for r in user.roles] and ctx.author.id != ctx.guild.owner.id):
+            return await ctx.send("You can't remove this ID")
+        if(c["modRole"] in [r.name for r in user.roles]):
+            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
+            await ctx.send("User " + user.name + " was removed from " + c["modRole"])
         else:
-            return await ctx.send("User wasn't an admin")
+            return await ctx.send("User " + user.name + " wasn't in " + c["modRole"])
 
     ### Owner Commands ###
-    @commands.group()
-    async def owner(self, ctx):
-        """Commands usable by the Owner"""
-        if (ctx.author.id not in akuma.c["owner"]): 
-            return
-        if ctx.invoked_subcommand is None:
-            await ctx.send(ownerCommands)
+    @owner.command()
+    async def setModRole(self, ctx, msg : str):
+        if(msg not in [r.name for r in ctx.guild.roles]):
+            return await ctx.send("Role " + msg + " does not exist")
+        c["modRole"] = msg
+        writeJSON(c)
+        await ctx.send("Mod role set")
+
+    @owner.command()
+    async def setAdminRole(self, ctx, msg : str):
+        if(msg not in [r.name for r in ctx.guild.roles]):
+            return await ctx.send("Role " + msg + " does not exist")
+        c["adminRole"] = msg
+        writeJSON(c)
+        await ctx.send("Admin role set")
 
     @owner.command()
     async def addAdmin(self, ctx, id : int = None):
         if (id == None):
             return await ctx.send("Missing id")
-        if(id not in akuma.c["admins"]):
-            akuma.c["admins"].append(id)
-            await ctx.send("Added user ID " + str(id) + " to admins")
+        user = ctx.guild.get_member(id)
+        if user is None:
+            return await ctx.send("User not Found")
+        #Add Admin Role to User
+        if(c["adminRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["adminRole"]))
+            await ctx.send("User " + user.name + " was added to " + c["adminRole"])
         else:
-            return await ctx.send("User is already an admin")
-        if(id not in akuma.c["mods"]):
-            akuma.c["mods"].append(id)
-            await ctx.send("Added user id " + str(id) + " to mods")
+            return await ctx.send("User " + user.name + " is already in " + c["adminRole"])
+        #Add Mod Role to User
+        if(c["modRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
+            await ctx.send("User " + user.name + " was added to " + c["modRole"])
         else:
-            return await ctx.send("User is already a mod")
-        akuma.writeJSON(akuma.c)
+            return await ctx.send("User " + user.name + " is already in " + c["modRole"])
 
     @owner.command()
     async def rmAdmin(self, ctx, id : int = None):
         if (id == None):
             return await ctx.send("Missing id")
-        if(id in akuma.c["admins"]):
-            akuma.c["admins"].remove(id)
-            akuma.writeJSON(akuma.c)
-            await ctx.send("Removed user id " + str(id) + " from admins")
+        user = ctx.guild.get_member(id)
+        if user is None:
+            return await ctx.send("User not Found")
+        if (user.id == ctx.author.id):
+            return await ctx.send("You can't remove yourself from Admins")
+        if(c["adminRole"] in [r.name for r in user.roles]):
+            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=c["adminRole"]))
+            await ctx.send("User " + user.name + " was removed from " + c["adminRole"])
         else:
-            return await ctx.send("User wasn't an admin")
+            return await ctx.send("User " + user.name + " wasn't in " + c["adminRole"])
 
 #Setup
 def setup(bot):
