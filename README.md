@@ -18,9 +18,6 @@ Depending on your OS and environment you need to type `python3` or another equiv
 2. Scroll down and "Create a Bot User"
 3. Reveal and copy Token of your new Bot
 4. Open [settings.json](settings.json) and paste your Token into the quotes after `"token":`
-5. Open Discord and go to Settings > Appearance and activate "Developer Mode"
-6. Go to any Server you're in, right click your profile name in the user list and click "Copy ID"
-7. Open [settings.json](settings.json), replace the 0 after `"owner":` and paste it into the brackets after `"admins":` and `"mods":`
 
 ### Start the Bot
 Just open a console and type ```python akuma.py```
