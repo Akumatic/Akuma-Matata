@@ -2,19 +2,22 @@ import json
 import discord
 from discord.ext import commands
 
-#config file
-c = json.load(open("settings.json", "r"))
-s = json.load(open("server.json", "r"))
-    
-#The Bot itself
-bot = commands.Bot(description=c["description"], command_prefix=c["prefix"])
+cFile = "settings.json"
+sFile = "server.json"
 
+#config file
+c = json.load(open(cFile, "r"))
+s = json.load(open(sFile, "r"))
+    
 #Function to write changed config to JSON file
 def writeConfig(data):
-    json.dump(data, open("settings.json", "w"), indent=4)
+    json.dump(data, open(cFile, "w"), indent=4)
 
 def writeServer(data):
-    json.dump(data, open("server.json", "w"), indent=4)
+    json.dump(data, open(sFile, "w"), indent=4)
+
+#The Bot itself
+bot = commands.Bot(description=c["description"], command_prefix=c["prefix"])
 
 @bot.event
 async def on_ready():
@@ -31,10 +34,6 @@ async def on_guild_join(guild):
 async def on_guild_remove(guild):
     del s[str(guild.id)]
     writeServer(s)
-
-@bot.command()
-async def invite(ctx):
-    await ctx.send("https://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=8".format(bot.user.id))
 
 @bot.command(hidden=True)
 async def printExt(ctx):

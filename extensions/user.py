@@ -12,6 +12,12 @@ class User():
         await ctx.send(s[str(ctx.guild.id)]["joinMessage"])
 
     @commands.command()
+    async def botinvite(self, ctx):
+        await ctx.send("""Invite Link: <https://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=8>
+        \nPlease read <https://github.com/Akumatic/Akuma-Matata/blob/master/README.md> for informations""".format(self.bot.user.id))
+
+
+    @commands.command()
     async def suggest(self, ctx, *, msg : str):
         """Makes a suggestion to the moderation team. 
         
