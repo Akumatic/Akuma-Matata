@@ -7,6 +7,7 @@
     "admins": [],
     "mods": [],
     "extensions": [
+        "fun"
     ],
     "joinMessage": "",
     "suggestionChannel": 0
