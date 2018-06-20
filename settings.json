@@ -3,13 +3,9 @@
     "prefix": "~",
     "description": "A Discord Bot written by Akuma#7346",
     "game": "",
-    "adminRole": "",
-    "modRole": "",
     "extensions": [
         "fun",
         "moderation",
         "user"
-    ],
-    "joinMessage": "",
-    "suggestionChannel": 0
+    ]
 }

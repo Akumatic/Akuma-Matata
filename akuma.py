@@ -3,14 +3,18 @@ import discord
 from discord.ext import commands
 
 #config file
-c =  json.load(open("settings.json", "r"))
+c = json.load(open("settings.json", "r"))
+s = json.load(open("server.json", "r"))
+    
 #The Bot itself
 bot = commands.Bot(description=c["description"], command_prefix=c["prefix"])
 
 #Function to write changed config to JSON file
-def writeJSON(data):
-    with open("settings.json", "w") as file:
-        json.dump(data, file, indent=4)
+def writeConfig(data):
+    json.dump(data, open("settings.json", "w"), indent=4)
+
+def writeServer(data):
+    json.dump(data, open("server.json", "w"), indent=4)
 
 @bot.event
 async def on_ready():
@@ -18,13 +22,27 @@ async def on_ready():
     game = (c["prefix"] + "help" if (c["game"] == "") else c["prefix"] + "help | " + c["game"])
     return await bot.change_presence(status=discord.Status.online,activity=discord.Game(name=game))
 
+@bot.event
+async def on_guild_join(guild):
+    s[str(guild.id)] = {"adminRole": "", "modRole": "", "joinMessage" : "", "suggestionChannel": 0, "modChannel": 0}
+    writeServer(s)
+
+@bot.event
+async def on_guild_remove(guild):
+    del s[str(guild.id)]
+    writeServer(s)
+
+@bot.command()
+async def invite(ctx):
+    await ctx.send("https://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=8".format(bot.user.id))
+
 @bot.command(hidden=True)
 async def printExt(ctx):
     """Prints out every loaded extension"""
-    s = []
+    string = []
     for ext in bot.extensions:
-        s.append(ext.split(".")[1])
-    await ctx.send("Loaded extensions: " + ", ".join(s))
+        string.append(ext.split(".")[1])
+    await ctx.send("Loaded extensions: " + ", ".join(string))
 
 @bot.command(hidden=True)
 async def load(ctx, ext : str = None, json : bool = False):
@@ -32,7 +50,7 @@ async def load(ctx, ext : str = None, json : bool = False):
     
     First argument is the name of python file without .py extension.
     (Optional) If second argument is True, it will be autoloaded"""
-    if(ctx.author.id != c["owner"]):
+    if(ctx.author.id != ctx.guild.owner.id):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
@@ -41,14 +59,14 @@ async def load(ctx, ext : str = None, json : bool = False):
         await ctx.send("Loaded " + ext)
         if(json):
             c["extensions"].append(ext)
-            writeJSON(c)
+            writeConfig(c)
     except Exception as e:
         await ctx.send("Failed to load extension \"{}\": {}".format(ext, "{} ({})".format(type(e).__name__, e)))
 
 @bot.command(hidden=True)
 async def reload(ctx, ext : str = None):
     """Reloads an extension"""    
-    if(ctx.author.id != c["owner"]):
+    if(ctx.author.id != ctx.guild.owner.id):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
@@ -69,7 +87,7 @@ async def unload(ctx, ext : str = None, json : bool = False):
     
     First argument is the name of the extension.
     (Optional) If second argument is True, it will be removed from autoload"""
-    if(ctx.author.id != c["owner"]):
+    if(ctx.author.id != ctx.guild.owner.id):
         return
     if(ext == None):
         return await ctx.send("No extension specified")
@@ -78,7 +96,7 @@ async def unload(ctx, ext : str = None, json : bool = False):
         await ctx.send("Unloaded " + ext)
         if(json):
             c["extensions"].remove(ext)
-            writeJSON(c)
+            writeConfig(c)
     else:
         await ctx.send("Extension " + ext + " not loaded")
 

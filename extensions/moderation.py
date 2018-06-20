@@ -1,6 +1,6 @@
-import discord, json
+import discord
 from discord.ext import commands
-from akuma import c, writeJSON
+from akuma import s, c, writeServer
 
 modCommands = """```Possible Commands:
     mod setJoinMessage <msg>
@@ -24,7 +24,7 @@ class Moderation():
     @commands.group()
     async def mod(self, ctx):
         """Commands usable a Mod"""
-        if (ctx.author.id not in c["mods"]): 
+        if (s[str(ctx.guild.id)]["modRole"] not in [r.name for r in ctx.author.roles]): 
             return
         if ctx.invoked_subcommand is None:
             await ctx.send(modCommands)
@@ -32,7 +32,7 @@ class Moderation():
     @commands.group()
     async def admin(self, ctx):
         """Commands usable by an Admin"""
-        if(ctx.author.id not in c["admins"]):
+        if(s[str(ctx.guild.id)]["adminRole"] not in [r.name for r in ctx.author.roles]):
             return
         if ctx.invoked_subcommand is None:
             await ctx.send(adminCommands)
@@ -48,8 +48,8 @@ class Moderation():
     ### Mod Commands ###
     @mod.command()
     async def setJoinMessage(self, ctx, *, msg : str):
-        c["joinMessage"] = msg
-        writeJSON(c)
+        s[str(ctx.guild.id)]["joinMessage"] = msg
+        writeServer(s)
         await ctx.send("Join Message sucessfully changed to: " + msg)
 
     ### Admin Commands ###
@@ -61,11 +61,11 @@ class Moderation():
         if user is None:
             return await ctx.send("User not Found")
         #Add Mod Role to User
-        if(c["modRole"] not in [r.name for r in user.roles]):
-            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
-            await ctx.send("User " + user.name + " was added to " + c["modRole"])
+        if(s[str(ctx.guild.id)]["modRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=s[str(ctx.guild.id)]["modRole"]))
+            await ctx.send("User " + user.name + " was added to " + s[str(ctx.guild.id)]["modRole"])
         else:
-            return await ctx.send("User " + user.name + " is already in " + c["modRole"])
+            return await ctx.send("User " + user.name + " is already in " + s[str(ctx.guild.id)]["modRole"])
 
     @admin.command()
     async def rmMod(self, ctx, id : int = None):
@@ -76,29 +76,29 @@ class Moderation():
             return await ctx.send("User not Found")
         if (user.id == ctx.author.id):
             return await ctx.send("You can't remove yourself from Mods")
-        if(c["adminRole"] in [r.name for r in user.roles] and ctx.author.id != ctx.guild.owner.id):
+        if(s[str(ctx.guild.id)]["adminRole"] in [r.name for r in user.roles] and ctx.author.id != ctx.guild.owner.id):
             return await ctx.send("You can't remove this ID")
-        if(c["modRole"] in [r.name for r in user.roles]):
-            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
-            await ctx.send("User " + user.name + " was removed from " + c["modRole"])
+        if(s[str(ctx.guild.id)]["modRole"] in [r.name for r in user.roles]):
+            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=s[str(ctx.guild.id)]["modRole"]))
+            await ctx.send("User " + user.name + " was removed from " + s[str(ctx.guild.id)]["modRole"])
         else:
-            return await ctx.send("User " + user.name + " wasn't in " + c["modRole"])
+            return await ctx.send("User " + user.name + " wasn't in " + s[str(ctx.guild.id)]["modRole"])
 
     ### Owner Commands ###
     @owner.command()
     async def setModRole(self, ctx, msg : str):
         if(msg not in [r.name for r in ctx.guild.roles]):
             return await ctx.send("Role " + msg + " does not exist")
-        c["modRole"] = msg
-        writeJSON(c)
+        s[str(ctx.guild.id)]["modRole"] = msg
+        writeServer(s)
         await ctx.send("Mod role set")
 
     @owner.command()
     async def setAdminRole(self, ctx, msg : str):
         if(msg not in [r.name for r in ctx.guild.roles]):
             return await ctx.send("Role " + msg + " does not exist")
-        c["adminRole"] = msg
-        writeJSON(c)
+        s[str(ctx.guild.id)]["adminRole"] = msg
+        writeServer(s)
         await ctx.send("Admin role set")
 
     @owner.command()
@@ -109,17 +109,17 @@ class Moderation():
         if user is None:
             return await ctx.send("User not Found")
         #Add Admin Role to User
-        if(c["adminRole"] not in [r.name for r in user.roles]):
-            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["adminRole"]))
-            await ctx.send("User " + user.name + " was added to " + c["adminRole"])
+        if(s[str(ctx.guild.id)]["adminRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=s[str(ctx.guild.id)]["adminRole"]))
+            await ctx.send("User " + user.name + " was added to " + s[str(ctx.guild.id)]["adminRole"])
         else:
-            return await ctx.send("User " + user.name + " is already in " + c["adminRole"])
+            return await ctx.send("User " + user.name + " is already in " + s[str(ctx.guild.id)]["adminRole"])
         #Add Mod Role to User
-        if(c["modRole"] not in [r.name for r in user.roles]):
-            await user.add_roles(discord.utils.get(ctx.guild.roles, name=c["modRole"]))
-            await ctx.send("User " + user.name + " was added to " + c["modRole"])
+        if(s[str(ctx.guild.id)]["modRole"] not in [r.name for r in user.roles]):
+            await user.add_roles(discord.utils.get(ctx.guild.roles, name=s[str(ctx.guild.id)]["modRole"]))
+            await ctx.send("User " + user.name + " was added to " + s[str(ctx.guild.id)]["modRole"])
         else:
-            return await ctx.send("User " + user.name + " is already in " + c["modRole"])
+            return await ctx.send("User " + user.name + " is already in " + s[str(ctx.guild.id)]["modRole"])
 
     @owner.command()
     async def rmAdmin(self, ctx, id : int = None):
@@ -130,11 +130,11 @@ class Moderation():
             return await ctx.send("User not Found")
         if (user.id == ctx.author.id):
             return await ctx.send("You can't remove yourself from Admins")
-        if(c["adminRole"] in [r.name for r in user.roles]):
-            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=c["adminRole"]))
-            await ctx.send("User " + user.name + " was removed from " + c["adminRole"])
+        if(s[str(ctx.guild.id)]["adminRole"] in [r.name for r in user.roles]):
+            await user.remove_roles(discord.utils.get(ctx.guild.roles, name=s[str(ctx.guild.id)]["adminRole"]))
+            await ctx.send("User " + user.name + " was removed from " + s[str(ctx.guild.id)]["adminRole"])
         else:
-            return await ctx.send("User " + user.name + " wasn't in " + c["adminRole"])
+            return await ctx.send("User " + user.name + " wasn't in " + s[str(ctx.guild.id)]["adminRole"])
 
 #Setup
 def setup(bot):
