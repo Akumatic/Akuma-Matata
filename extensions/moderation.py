@@ -20,6 +20,26 @@ class Moderation():
     def __init__(self, bot):
         self.bot = bot
 
+    #Logs
+    async def on_member_join(self, member):
+        await member.send(s[str(member.guild.id)]["joinMessage"])
+        if(s[str(member.guild.id)]["modChannel"] != 0):
+            e = discord.Embed(color=0x32c832)
+            e.set_author(name = str(member) + " has joined the server.", icon_url=member.avatar_url)
+            e.add_field(name="ID", value=str(member.id), inline=False)
+            e.add_field(name="Mention", value=member.mention, inline=False)
+            chan = self.bot.get_channel(s[str(member.guild.id)]["modChannel"])
+            await chan.send(embed=e)
+
+    async def on_member_remove(self, member):
+        if(s[str(member.guild.id)]["modChannel"] != 0):
+            e = discord.Embed(color=0xc83232)
+            e.set_author(name = str(member) + " has left the server.", icon_url=member.avatar_url)
+            e.add_field(name="ID", value=str(member.id), inline=False)
+            e.add_field(name="Mention", value=member.mention, inline=False)
+            chan = self.bot.get_channel(s[str(member.guild.id)]["modChannel"])
+            await chan.send(embed=e)
+
     #Groups
     @commands.group()
     async def mod(self, ctx):
