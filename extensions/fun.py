@@ -8,17 +8,17 @@ class Fun():
     @commands.command()
     async def ping(self, ctx):
         """Ping, Pong"""
-        await ctx.send(ctx.author.mention + "Pong!")
+        await ctx.send(ctx.author.mention + " Pong!")
 
     @commands.command()
     async def dice(self, ctx):
         """Throws a six-sided dice."""
-        await ctx.send(ctx.author.mention + " You rolled a D6: " + random.randint(1,6))
+        await ctx.send(ctx.author.mention + " You rolled a D6: " + str(random.randint(1,6)))
 
     @commands.command()
     async def coin(self, ctx):
         """Throws a coin."""
-        await ctx.send(ctx.author.mention + " Your coin flip is " + "Heads" if (random.random() < 0.5) else "Tails")
+        await ctx.send(ctx.author.mention + " Your coin flip is " + ("Head" if (random.random() < 0.5) else "Tail"))
 
     @commands.command()
     async def rps(self, ctx, userChoice : str=""):
