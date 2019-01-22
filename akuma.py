@@ -27,7 +27,7 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    s[str(guild.id)] = {"adminRole": "", "modRole": "", "joinMessage" : "", "suggestionChannel": 0, "modChannel": 0, "announcementChannel": 0}
+    s[str(guild.id)] = {"adminRole": "", "modRole": "", "joinMessage" : "", "suggestionChannel": 0, "modChannel": 0, "announcementChannel": 0, "announcements":0}
     writeServer(s)
 
 @bot.event
