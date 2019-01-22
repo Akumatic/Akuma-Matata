@@ -8,26 +8,26 @@ class Fun():
     @commands.command()
     async def ping(self, ctx):
         """Ping, Pong"""
-        await ctx.send("Pong!")
+        await ctx.send(ctx.author.mention + "Pong!")
 
     @commands.command()
     async def dice(self, ctx):
         """Throws a six-sided dice."""
-        await ctx.send(random.randint(1,6))
+        await ctx.send(ctx.author.mention + " You rolled a D6: " + random.randint(1,6))
 
     @commands.command()
     async def coin(self, ctx):
         """Throws a coin."""
-        await ctx.send("Heads" if (random.random() < 0.5) else "Tails")
+        await ctx.send(ctx.author.mention + " Your coin flip is " + "Heads" if (random.random() < 0.5) else "Tails")
 
     @commands.command()
-    async def rps(self, ctx, userChoice : str):
+    async def rps(self, ctx, userChoice : str=""):
         """Play Rock, Paper, Scissors with the Bot
         Input \"r\" for Rock, \"p\" for Paper and \"s\" for Scissors"""
         vals = ["r", "p", "s"]
         userChoice = str.lower(userChoice)
-        if userChoice not in vals:
-            await ctx.send(ctx.autor.mention + " Invalid input. Please enter \"r\", \"p\", or \"s\"")
+        if userChoice == "" or userChoice not in vals:
+            await ctx.send(ctx.author.mention + " Invalid input. Please enter \"r\", \"p\", or \"s\"")
         else:
             botChoice = vals[random.randint(0,2)]
             if(userChoice == "r" and botChoice == "p"):
@@ -53,7 +53,7 @@ class Fun():
             temp = a
             a = b
             b = temp
-        await ctx.send("Random roll between " + str(a) + " and " + str(b) + ": " + str(random.randint(a,b)))
+        await ctx.send(ctx.author.mention + " Random roll between " + str(a) + " and " + str(b) + ": " + str(random.randint(a,b)))
 
 #Setup
 def setup(bot):
