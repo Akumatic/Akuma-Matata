@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from datetime import datetime
 from akuma import s, c, writeServer
 
 modCommands = """```Possible Commands:
@@ -22,7 +23,8 @@ class Moderation():
 
     #Logs
     async def on_member_join(self, member):
-        await member.send(s[str(member.guild.id)]["joinMessage"])
+        if(s[str(member.guild.id)]["joinMessage"] != ""):
+            await member.send(s[str(member.guild.id)]["joinMessage"])
         if(s[str(member.guild.id)]["modChannel"] != 0):
             e = discord.Embed(color=0x32c832)
             e.set_author(name = str(member) + " has joined the server.", icon_url=member.avatar_url)
@@ -72,6 +74,23 @@ class Moderation():
         writeServer(s)
         await ctx.send("Join Message sucessfully changed to: " + msg)
 
+    
+    @mod.command()
+    async def setAnnouncementChannel(self, ctx, msg : str):
+        if(msg not in [c.name for c in ctx.guild.channels]):
+            return await ctx.send("Channel " + msg + " does not exist")
+        s[str(ctx.guild.id)]["announcementChannel"] = 465251673762168837
+        writeServer(s)
+        await ctx.send("Announcement channel set")
+
+    @mod.command()
+    async def setModChannel(self, ctx, msg : str):
+        if(msg not in [c.name for c in ctx.guild.channels]):
+            return await ctx.send("Channel " + msg + " does not exist")
+        s[str(ctx.guild.id)]["modChannel"] = 465251673762168837
+        writeServer(s)
+        await ctx.send("Mod channel set")
+
     @mod.command()
     async def kick(self, ctx, id : int = None, *, msg : str = None):
         if(id == None):
@@ -91,6 +110,37 @@ class Moderation():
             e.add_field(name="Reason:", value=msg, inline=False)
             chan = self.bot.get_channel(s[str(ctx.guild.id)]["modChannel"])
             await chan.send(embed=e)
+
+    @mod.command()
+    async def announce(self, ctx, *, msg):
+        if(s[str(ctx.guild.id)]["announcementChannel"] == 0):
+            return await ctx.send("No Channel for Announcements specified. Please set it up first with \"setAnnouncementChannel\"")
+        else:
+            e = discord.Embed(color=0x6428c8)
+            num = s[str(ctx.guild.id)]["announcements"]
+            num += 1
+            s[str(ctx.guild.id)]["announcements"] = num
+            writeServer(s)
+            e.add_field(name="#" + str(s[str(ctx.guild.id)]["announcements"]) + " - " + datetime.now().strftime("%d.%m.%Y"), value=msg, inline=False)
+            chan = self.bot.get_channel(s[str(ctx.guild.id)]["announcementChannel"])
+            await chan.send(embed=e)
+
+    @mod.command()
+    async def printServerSettings(self, ctx):
+        e = discord.Embed(color=0x6428c8)
+        for i in s[str(ctx.guild.id)].items():
+            n = i[0]
+            if (i[1] == ""):
+                v = "not set"
+            elif (i[1] == 0):
+                if(i[0] == "announcements"):
+                    v = 0
+                else:
+                    v = "not set"
+            else:
+                v = i[1]
+            e.add_field(name=n, value=v, inline=False)
+        await ctx.send(embed=e)
 
     ### Admin Commands ###
     @admin.command()
