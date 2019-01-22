@@ -1,5 +1,6 @@
 import json, discord
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
 
 #config files
 cFile = "settings.json"
@@ -26,13 +27,19 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    s[str(guild.id)] = {"adminRole": "", "modRole": "", "joinMessage" : "", "suggestionChannel": 0, "modChannel": 0}
+    s[str(guild.id)] = {"adminRole": "", "modRole": "", "joinMessage" : "", "suggestionChannel": 0, "modChannel": 0, "announcementChannel": 0}
     writeServer(s)
 
 @bot.event
 async def on_guild_remove(guild):
     del s[str(guild.id)]
     writeServer(s)
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
 
 @bot.command(hidden=True)
 async def printExt(ctx):
