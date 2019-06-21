@@ -9,7 +9,7 @@ A Discord Bot written in Python using the Rewrite API wrapper
 - Discord Rewrite API Wrapper
 
 ##### You can get the Wrapper with pip:
-`python -m pip install -U https://github.com/Rapptz/discord.py/archive/rewrite.zip`
+`python -m pip install discord.py`
 
 Depending on your OS and environment you need to type `python3` or another equivalent instead of `python`
 

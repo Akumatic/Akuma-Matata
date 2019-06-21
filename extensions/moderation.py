@@ -1,4 +1,4 @@
-import discord
+import discord, io
 from discord.ext import commands
 from datetime import datetime
 from akuma import s, c, writeServer
@@ -17,11 +17,12 @@ ownerCommands = """```Possible Commands:
     owner rmAdmin <id>
     ```"""
 
-class Moderation():
+class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     #Logs
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         if s[str(member.guild.id)]["logJoinAndLeave"] == True:
             if s[str(member.guild.id)]["joinMessage"] != "":
@@ -33,7 +34,8 @@ class Moderation():
                 e.add_field(name="Mention", value=member.mention, inline=False)
                 chan = self.bot.get_channel(s[str(member.guild.id)]["logJoinAndLeaveChannel"])
                 await chan.send(embed=e)
-
+    
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         if s[str(member.guild.id)]["logJoinAndLeave"] == True:
             if s[str(member.guild.id)]["logJoinAndLeaveChannel"] != 0:
@@ -44,26 +46,37 @@ class Moderation():
                 chan = self.bot.get_channel(s[str(member.guild.id)]["logJoinAndLeaveChannel"])
                 await chan.send(embed=e)
 
+    @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        if s[str(before.guild.id)]["logEditAndDelete"] == True and before.author.bot == False:
+        if before.guild is not None and before.author.bot == False and s[str(before.guild.id)]["logEditAndDelete"] == True:
             if s[str(before.guild.id)]["logEditAndDeleteChannel"] != 0 and before.content != after.content:
-                e = discord.Embed(color=0xc83232)
+                e = discord.Embed(color=0x32c8c8)
                 e.set_author(name = str(before.author) + " edited a message.", icon_url=before.author.avatar_url)
-                e.add_field(name="Author ID", value=str(before.author.id), inline=False)
+                e.add_field(name="Profile", value=before.author.mention, inline=False)
                 e.add_field(name="Channel", value=str(before.channel.name), inline=False)
                 e.add_field(name="Message before", value=before.content,inline=False)
                 e.add_field(name="Message after", value=after.content,inline=False)
                 chan = self.bot.get_channel(s[str(before.guild.id)]["logEditAndDeleteChannel"])
                 await chan.send(embed=e)
 
+    @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if s[str(message.guild.id)]["logEditAndDelete"] == True and message.author.bot == False:
+        if message.guild is not None and message.author.bot == False and s[str(message.guild.id)]["logEditAndDelete"] == True:
             if s[str(message.guild.id)]["logEditAndDeleteChannel"] != 0:
                 e = discord.Embed(color=0xc83232)
-                e.set_author(name = str(message.author) + " deleted a message.", icon_url=message.author.avatar_url)
-                e.add_field(name="Author ID", value=str(message.author.id), inline=False)
+                e.set_author(name = str(message.author) + "'s message got deleted.", icon_url=message.author.avatar_url)
+                e.add_field(name="Profile", value=message.author.mention, inline=False)
                 e.add_field(name="Channel", value=str(message.channel.name), inline=False)
-                e.add_field(name="Message", value=message.content,inline=False)
+                if message.content:
+                    e.add_field(name="Message", value=message.content,inline=False)
+                numAtch = len(message.attachments)
+                if numAtch == 1:
+                    e.add_field(name="Attachments", value="The message had " + str(numAtch) + " attachment",inline=False)
+                    e.add_field(name="File Name", value=message.attachments[0].filename, inline=False)
+                elif numAtch > 1:
+                    e.add_field(name="Attachments", value="The message had " + str(numAtch) + " attachments",inline=False)
+                    for a in message.attachments:
+                        e.add_field(name="File Name", value=a.filename, inline=False)
                 chan = self.bot.get_channel(s[str(message.guild.id)]["logEditAndDeleteChannel"])
                 await chan.send(embed=e)
 
