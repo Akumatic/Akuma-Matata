@@ -11,46 +11,20 @@ class Fun(commands.Cog):
         await ctx.send("{} Pong!".format(ctx.author.mention))
 
     @commands.command()
-    async def d4(self, ctx, *, msg : str = None):
+    async def dice(self, ctx, *, countstr: str = "4"):
         """Throws a four-sided dice."""
-        await ctx.send("{} You rolled a D4{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 4)))
+        try:
+            count = int(countstr)
+        except:
+            await ctx.send(embed=discord.Embed(color=discord.Color.red(), description="Please enter a valid number for ``dice``"))
+            return
 
-    @commands.command()
-    async def d6(self, ctx, *, msg : str = None):
-        """Throws a six-sided dice."""
-        await ctx.send("{} You rolled a D6{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 6)))
+        limit = 1000  # The limit for the amount of sides of the dice can be set here
+        if count > limit:
+            await ctx.send(embed=discord.Embed(color=discord.Color.red(), description=f"The limit for the number of sides of the dice is {limit}. Please use a smaller number next time."))
+            count = limit
 
-    @commands.command()
-    async def d8(self, ctx, *, msg : str = None):
-        """Throws a eight-sided dice."""
-        await ctx.send("{} You rolled a D8{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 8)))
-
-    @commands.command()
-    async def d10(self, ctx, *, msg : str = None):
-        """Throws a eight-sided dice."""
-        await ctx.send("{} You rolled a D10{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 10)))
-
-    @commands.command()
-    async def d12(self, ctx, *, msg : str = None):
-        """Throws a twelve-sided dice."""
-        await ctx.send("{} You rolled a D12{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 12)))
-
-    @commands.command()
-    async def d20(self, ctx, *, msg : str = None):
-        """Throws a twenty-sided dice."""
-        await ctx.send("{} You rolled a D20{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 20)))
-
-    @commands.command()
-    async def d100(self, ctx, *, msg : str = None):
-        """Throws a hundred-sided dice."""
-        await ctx.send("{} You rolled a D100{}: {}".format(ctx.author.mention,
-            "" if msg is None else " for \"{}\"".format(msg), random.randint(1, 100)))
+        await ctx.send(embed=discord.Embed(title=f"<< Dice {count} >>", description=f"{random.randint(1, int(count))}", color=0x53ff28))
     
     @commands.command(name="8ball")
     async def magic8ball(self,ctx, *, msg : str = None):
