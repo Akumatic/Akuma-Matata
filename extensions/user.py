@@ -46,9 +46,9 @@ class User(commands.Cog):
 
     @commands.command(hidden=True)
     async def botinvite(self, ctx):
-        await ctx.send("Invite this bot to your server: <https://discordapp.com/oauth2/authorize?client_id={}&scope=bot"
+        await ctx.send(f"Invite this bot to your server: <https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot"
             "&permissions=8>\nPlease read <https://github.com/Akumatic/Akuma-Matata/blob/master/README.md> for informat"
-            "ions".format(self.bot.user.id))
+            "ions")
 
 #Setup
 def setup(bot):
