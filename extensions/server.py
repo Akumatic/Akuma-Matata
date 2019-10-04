@@ -88,9 +88,32 @@ class Server(commands.Cog):
                 e = discord.Embed(color=0x32c8c8)
                 e.set_author(name = str(before.author) + " edited a message.", icon_url=before.author.avatar_url)
                 e.add_field(name="Profile", value=before.author.mention, inline=False)
+
                 e.add_field(name="Channel", value=str(before.channel.name), inline=False)
-                e.add_field(name="Message before", value=before.content,inline=False)
-                e.add_field(name="Message after", value=after.content,inline=False)
+                if len(before.content) < 1025:
+                    e.add_field(name="Message before", value=before.content, inline=False)
+                else:
+                    i = 1
+                    temp = before.content
+                    while len(temp) > 1018:
+                        e.add_field(name="Message before ({})".format(i), value="{}[...]".format(temp[:1019], 
+                            inline=False))
+                        temp = temp[1019:]
+                        i += 1
+                    e.add_field(name="Message before ({})".format(i), value="{}".format(temp, inline=False))
+
+                if len(after.content) < 1025:
+                    e.add_field(name="Message after", value=after.content, inline=False)
+                else:
+                    i = 1
+                    temp = after.content
+                    while len(temp) > 1018:
+                        e.add_field(name="Message after ({})".format(i), value="{}[...]".format(temp[:1019], 
+                            inline=False))
+                        temp = temp[1019:]
+                        i += 1
+                    e.add_field(name="Message after ({})".format(i), value="{}".format(temp, inline=False))
+
                 chan = self.bot.get_channel(self.bot.serverCfg[str(before.guild.id)]["server"]["messageEventChannel"])
                 await chan.send(embed=e)
             else:
@@ -121,8 +144,18 @@ class Server(commands.Cog):
                 e.set_author(name = str(message.author) + "'s message got deleted.", icon_url=message.author.avatar_url)
                 e.add_field(name="Profile", value=message.author.mention, inline=False)
                 e.add_field(name="Channel", value=str(message.channel.name), inline=False)
+                
                 if message.content:
-                    e.add_field(name="Message", value=message.content,inline=False)
+                    if len(message.content) < 1025:
+                        e.add_field(name="Message", value=message.content, inline=False)
+                    else:
+                        i = 1
+                        temp = message.content
+                        while len(temp) > 1018:
+                            e.add_field("Message ({})".format(i), value="{}[...]".format(temp[:1019], inline=False))
+                            temp = temp[1019:]
+                            i += 1
+                        e.add_field("Message ({})".format(i), value="{}".format(temp, inline=False))
                 num = len(message.attachments)
                 if num > 0:
                     e.add_field(name="Attachments", value="The message had {} attachment(s)".format(num),inline=False)

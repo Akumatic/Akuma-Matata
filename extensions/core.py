@@ -25,7 +25,7 @@ class Core(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
-            return await ctx.author.send("The command you tried to use does not exist.")
+            return #await ctx.author.send("The command you tried to use does not exist.")
         if isinstance(error, commands.NotOwner):
             return await ctx.send("Only the owner of this bot can use this command.")
         if isinstance(error, commands.MissingPermissions):
