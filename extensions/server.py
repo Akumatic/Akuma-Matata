@@ -86,10 +86,11 @@ class Server(commands.Cog):
         if self.bot.serverCfg[str(before.guild.id)]["server"]["logMessageEvent"] and before.content != after.content:
             if self.bot.serverCfg[str(before.guild.id)]["server"]["messageEventChannel"] != 0:
                 e = discord.Embed(color=0x32c8c8)
-                e.set_author(name = str(before.author) + " edited a message.", icon_url=before.author.avatar_url)
+                e.set_author(name="{} edited a message.".format(before.author), icon_url=before.author.avatar_url)
                 e.add_field(name="Profile", value=before.author.mention, inline=False)
+                e.add_field(name="Channel", value=before.channel.mention, inline=False)
+                e.add_field(name="URL", value=after.jump_url, inline=False)
 
-                e.add_field(name="Channel", value=str(before.channel.name), inline=False)
                 if len(before.content) < 1025:
                     e.add_field(name="Message before", value=before.content, inline=False)
                 else:
@@ -141,9 +142,9 @@ class Server(commands.Cog):
         if self.bot.serverCfg[str(message.guild.id)]["server"]["logMessageEvent"]:
             if self.bot.serverCfg[str(message.guild.id)]["server"]["messageEventChannel"] != 0:
                 e = discord.Embed(color=0xc83232)
-                e.set_author(name = str(message.author) + "'s message got deleted.", icon_url=message.author.avatar_url)
+                e.set_author(name="{}'s message got deleted.".format(message.author), icon_url=message.author.avatar_url)
                 e.add_field(name="Profile", value=message.author.mention, inline=False)
-                e.add_field(name="Channel", value=str(message.channel.name), inline=False)
+                e.add_field(name="Channel", value=message.channel.mention, inline=False)
                 
                 if message.content:
                     if len(message.content) < 1025:
@@ -161,6 +162,7 @@ class Server(commands.Cog):
                     e.add_field(name="Attachments", value="The message had {} attachment(s)".format(num),inline=False)
                     for a in message.attachments:
                         e.add_field(name="File Name", value=a.filename, inline=False)
+
                 chan = self.bot.get_channel(self.bot.serverCfg[str(message.guild.id)]["server"]["messageEventChannel"])
                 await chan.send(embed=e)
             else:
