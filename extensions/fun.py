@@ -8,32 +8,59 @@ class Fun(commands.Cog):
     @commands.command()
     async def ping(self, ctx):
         """Ping, Pong"""
-        await ctx.send("{} Pong!".format(ctx.author.mention))
+        e = discord.Embed(title="<< Ping >>", description=ctx.author.mention, color=discord.Color.blue())
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.add_field(name=":ping_pong:", value="Pong!")
+        await ctx.send(embed=e)
 
     @commands.command()
-    async def dice(self, ctx, *, countstr: str = "4"):
-        """Throws a four-sided dice."""
+    async def dice(self, ctx, countstr: str = "6", dicesstr: str = "1"):
+        """Throws a dice."""
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
         try:
             count = int(countstr)
+            dices = int(dicesstr)
         except:
-            await ctx.send(embed=discord.Embed(color=discord.Color.red(), description="Please enter a valid number for ``dice``"))
-            return
+            e.title="<< Dice >>"
+            e.color = discord.Color.red()
+            e.add_field(name=":game_die:", value="Please enter a valid number for `dice`")
+            return await ctx.send(embed=e)
 
-        limit = 1000  # The limit for the amount of sides of the dice can be set here
+        limit = 120  # The limit for the amount of sides of the dice can be set here
         if count > limit:
-            await ctx.send(embed=discord.Embed(color=discord.Color.red(), description=f"The limit for the number of sides of the dice is {limit}. Please use a smaller number next time."))
-            count = limit
-
-        await ctx.send(embed=discord.Embed(title=f"<< Dice {count} >>", description=f"{random.randint(1, int(count))}", color=0x53ff28))
+            e.title="<< Dice >>"
+            e.add_field(name=":game_die:", value=f"You tried to throw {count} sided dices. Allowed are {limit} sides.")
+            e.color=discord.Color.red()
+            return await ctx.send(embed=e)
+        #Embed limitation
+        if dices > 25:
+            e.title="<< Dice >>"
+            e.add_field(name=":game_die:", value=f"You tried to throw {dices} dices. Allowed are 25 dices.")
+            e.color=discord.Color.red()
+            return await ctx.send(embed=e)
+            
+        e.color = discord.Color.blue()
+        e.title = f"<< {dices} Dice {count} >>"
+        for i in range(dices):
+            e.add_field(name=":game_die:", value = random.randint(1, count), inline=True)
+        await ctx.send(embed=e)
     
     @commands.command(name="8ball")
-    async def magic8ball(self,ctx, *, msg : str = None):
+    async def magic8ball(self, ctx, *, msg: str = None):
+        e = discord.Embed(title="<< 8Ball >>", description=ctx.author.mention)
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
         if msg is None:
-            await ctx.send(":8ball: You need to specify a question.")
+            e.color = discord.Color.red()
+            e.add_field(name=":8ball:", value="You need to specify a question.")
+            return await ctx.send(embed=e)
         else:
-            e = discord.Embed(color=0x3296ff)
-            e.set_author(name = str(ctx.author), icon_url=ctx.author.avatar_url)
-            e.add_field(name=":grey_question: Question", value=msg, inline=False)
+            e.color = discord.Color.blue()
+            if len(msg) < 1025:
+                e.add_field(name=":grey_question: Question", value=msg, inline=False)
+            else:
+                e.add_field(name=":grey_question: Question", value=msg[:1024], inline=False)
+                e.add_field(name="[...]", value=msg[1024:], inline=False)
             e.add_field(name=":8ball: Answer", value=random.choice(
                 ["Yes.", "As I see it, yes.", "Outlook good.", "For sure", "Without a doubt.", "It is decidedly so.", 
                 "Without a doubt.", "Maybe", "Perhaps","It is uncertain", "Dont even think about it.", "Nope.", "Don't "
@@ -43,41 +70,59 @@ class Fun(commands.Cog):
     
     @commands.command()
     async def coin(self, ctx):
-        """Throws a coin."""
-        await ctx.send("{} Your coin flip is {}".format(ctx.author.mention, random.choice(["Head", "Tail"])))
+        """Flip a coin."""
+        e = discord.Embed(title="<< Flip a coin >>", description=ctx.author.mention, color=discord.Color.blue())
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.add_field(name="Your coin shows ", value=f"{random.choice(['Heads', 'Tails'])}")
+        await ctx.send(embed=e)
 
     @commands.command()
-    async def rps(self, ctx, userChoice : str = None):
+    async def rps(self, ctx, user: str = None):
         """Play Rock, Paper, Scissors with the Bot
-        Input \"r\" for Rock, \"p\" for Paper and \"s\" for Scissors"""
-        if userChoice == None or str.lower(userChoice) not in ["r", "p", "s"]:
-            return await ctx.send("{} Invalid input. Please enter \"r\", \"p\" or \"s\"".format(ctx.author.mention))
+        Input 'r' for Rock, 'p' for Paper and 's' for Scissors"""
+        e = discord.Embed(title="<< Rock, Paper, Scissors >>", description=ctx.author.mention)
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        if user == None or str.lower(user) not in ["r", "p", "s"]:
+            e.color=discord.Color.red()
+            e.add_field(name=":moyai::newspaper::scissors:", value="Invalid input. Please use 'r', 'p' or 's'")
+            return await ctx.send(embed=e)
 
-        botChoice = ["r", "p", "s"][random.randint(0,2)]
-        if userChoice == "r" and botChoice == "p":
-            await ctx.send("{} You lose".format(ctx.author.mention)) 
-        elif userChoice == "p" and botChoice == "s":
-            await ctx.send("{} You lose".format(ctx.author.mention))
-        elif userChoice == "s" and botChoice == "r":
-            await ctx.send("{} You lose".format(ctx.author.mention))
-        elif userChoice == "r" and botChoice == "s":
-            await ctx.send("{} You win".format(ctx.author.mention))
-        elif userChoice == "p" and botChoice == "r":
-            await ctx.send("{} You win".format(ctx.author.mention))
-        elif userChoice == "s" and botChoice == "p":
-            await ctx.send("{} You win".format(ctx.author.mention))
+        emote = {"r":":moyai:", "p":":newspaper:", "s":":scissors:"}
+        e.color=discord.Color.blue()
+        com = random.choice(["r", "p", "s"])
+        e.add_field(name="You", value=emote[user], inline=True)
+        e.add_field(name="Computers", value=emote[com], inline=True)
+        if (user == "r" and com == "p") or (user == "p" and com == "s") or (user == "s" and com == "r"):
+            e.add_field(name=":moyai::newspaper::scissors:", value="You lose")
+        elif (user == "r" and com == "s") or (user == "p" and com == "r") or (user == "s" and com == "p"):
+            e.add_field(name=":moyai::newspaper::scissors:", value="You win")
         else:
-            await ctx.send("{} It's a tie".format(ctx.author.mention))
+            e.add_field(name=":moyai::newspaper::scissors:", value="It's a tie")
+        await ctx.send(embed=e)
 
     @commands.command()
-    async def roll(self, ctx, a : int = 0,  b : int= 100):
+    async def roll(self, ctx, astr: str = "0",  bstr: str = "100"):
         """Rolls a random number between min and max.
         Default values are 0 and 100"""
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        try:
+            a = int(astr)
+            b = int(bstr)
+        except:
+            e.title="<< Roll >>"
+            e.color = discord.Color.red()
+            e.add_field(name=":game_die:", value="Please enter valid numbers for `roll`")
+            return await ctx.send(embed=e)
+
+        e.color = discord.Color.blue()
         if a > b:
             temp = a
             a = b
             b = temp
-        await ctx.send("{} Random roll between {} and {}: {}".format(ctx.author.mention, a, b, random.randint(a, b)))
+        e.title = f"<< Random roll in [{a}, {b}] >>"
+        e.add_field(name=":game_die:", value = random.randint(a, b))
+        await ctx.send(embed=e)
 
 #Setup
 def setup(bot):
