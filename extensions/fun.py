@@ -9,7 +9,7 @@ class Fun(commands.Cog):
     async def ping(self, ctx):
         """Ping, Pong"""
         e = discord.Embed(title="<< Ping >>", description=ctx.author.mention, color=discord.Color.blue())
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         e.add_field(name=":ping_pong:", value="Pong!")
         await ctx.send(embed=e)
 
@@ -17,7 +17,7 @@ class Fun(commands.Cog):
     async def dice(self, ctx, countstr: str = "6", dicesstr: str = "1"):
         """Throws a dice."""
         e = discord.Embed(description=ctx.author.mention)
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         try:
             count = int(countstr)
             dices = int(dicesstr)
@@ -49,7 +49,7 @@ class Fun(commands.Cog):
     @commands.command(name="8ball")
     async def magic8ball(self, ctx, *, msg: str = None):
         e = discord.Embed(title="<< 8Ball >>", description=ctx.author.mention)
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         if msg is None:
             e.color = discord.Color.red()
             e.add_field(name=":8ball:", value="You need to specify a question.")
@@ -72,7 +72,7 @@ class Fun(commands.Cog):
     async def coin(self, ctx):
         """Flip a coin."""
         e = discord.Embed(title="<< Flip a coin >>", description=ctx.author.mention, color=discord.Color.blue())
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         e.add_field(name="Your coin shows ", value=f"{random.choice(['Heads', 'Tails'])}")
         await ctx.send(embed=e)
 
@@ -81,7 +81,7 @@ class Fun(commands.Cog):
         """Play Rock, Paper, Scissors with the Bot
         Input 'r' for Rock, 'p' for Paper and 's' for Scissors"""
         e = discord.Embed(title="<< Rock, Paper, Scissors >>", description=ctx.author.mention)
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         if user == None or str.lower(user) not in ["r", "p", "s"]:
             e.color=discord.Color.red()
             e.add_field(name=":moyai::newspaper::scissors:", value="Invalid input. Please use 'r', 'p' or 's'")
@@ -105,7 +105,7 @@ class Fun(commands.Cog):
         """Rolls a random number between min and max.
         Default values are 0 and 100"""
         e = discord.Embed(description=ctx.author.mention)
-        e.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         try:
             a = int(astr)
             b = int(bstr)
@@ -122,6 +122,24 @@ class Fun(commands.Cog):
             b = temp
         e.title = f"<< Random roll in [{a}, {b}] >>"
         e.add_field(name=":game_die:", value = random.randint(a, b))
+        await ctx.send(embed=e)
+
+    @commands.command()
+    async def decide(self, ctx, *, msg: str = None):
+        """Decides between given options. Every option should be separated by a ','"""
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        if msg == None:
+            e.title="<< Decide >>"
+            e.color = discord.Color.red()
+            e.add_field(name="No Options given", value="Please give at least one option")
+            return await ctx.send(embed=e)
+        msg = msg.split(",")
+        e.color = discord.Color.blue()
+        e.title = f"<< Decide between {len(msg)} options >>"
+        for i in range(len(msg)):
+            e.add_field(name=f"Option {i+1}", value=msg[i])
+        e.add_field(name="Decision", value=random.choice(msg))
         await ctx.send(embed=e)
 
 #Setup

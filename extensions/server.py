@@ -15,6 +15,84 @@ class Server(commands.Cog):
             self.bot.serverCfg[str(id)]["server"][key] = default
         self.bot.writeJSON("server.json", self.bot.serverCfg)
 
+    def getCheckOrX(self, b: bool = False):
+        return ":white_check_mark:" if b else ":x:"
+
+    async def toggleEvent(self, ctx, type: str):
+        self.serverCfgCheck(ctx.guild.id, type, False)
+        temp = not self.bot.serverCfg[str(ctx.guild.id)]["server"][type]
+        self.bot.serverCfg[str(ctx.guild.id)]["server"][type] = temp
+        self.bot.writeJSON("server.json", self.bot.serverCfg)
+        e = discord.Embed(description=ctx.author.mention, color=discord.Color.green())
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        e.add_field(name=f"`{type}` successfully set to {temp}", value=self.getCheckOrX(temp))
+        await ctx.send(embed=e)
+
+    async def setChannel(self, ctx, type: str, channel : discord.TextChannel = None, idStr : str = None):
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        if channel is not None:
+            self.serverCfgCheck(ctx.guild.id, type, 0)
+            self.bot.serverCfg[str(ctx.guild.id)]["server"][type] = channel.id
+            self.bot.writeJSON("server.json", self.bot.serverCfg)
+            e.color = discord.Color.green()
+            e.add_field(name=f"`{type}` successfully set to", value=channel.mention)
+            return await ctx.send(embed=e)
+        if idStr is None:
+            e.color = discord.Color.red()
+            e.add_field(name=f"`{type}` not set", value="Please specify a valid channel")
+            return await ctx.send(embed=e)
+        try: 
+            id = int(idStr)
+        except:
+            e.color = discord.Color.red()
+            e.add_field(name=f"`{type}` not set", value="Please specify a valid channel")
+            return await ctx.send(embed=e)
+        if id not in [c.id for c in ctx.guild.channels]:
+            e.color = discord.Color.red()
+            e.add_field(name="Channel not found", value=f"Channel {id} does not exist on this server.")
+            return await ctx.send(embed=e)
+        self.serverCfgCheck(ctx.guild.id, type, 0)
+        self.bot.serverCfg[str(ctx.guild.id)]["server"][type] = id
+        self.bot.writeJSON("server.json", self.bot.serverCfg)
+        e.color = discord.Color.green()
+        e.add_field(name=f"`{type}` successfully set to", value=self.bot.get_channel(id).mention)
+        await ctx.send(embed=e)
+
+    async def resetChannel(self, ctx, type: str):
+        self.serverCfgCheck(ctx.guild.id, type, 0)
+        self.bot.serverCfg[str(ctx.guild.id)]["server"][type] = 0
+        self.bot.writeJSON("server.json", self.bot.serverCfg)
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        e.add_field(name=f"`{type}`", value="has been successfully reset")
+        e.color = discord.Color.green()
+        await ctx.send(embed=e)
+
+    async def channelNotSpecified(self, event: str, flag: str, channel: str, setChannelCmd:str, toggleCmd: str, guild):
+        if self.bot.serverCfg[str(guild.id)]["server"]["modChannel"] != 0:
+            e = discord.Embed(title=f"<< {event} Event >>", color=discord.Color.red())
+            e.add_field(inline=False, name=f"The `{flag}` flag is set ...", 
+                value=f"but no `{channel}` was specified.")
+            e.add_field(name="You can set it up with",
+                value=f"`{self.bot.command_prefix}{setChannelCmd}`")
+            e.add_field(name="You can disable it with",
+                value=f"`{self.bot.command_prefix}{toggleCmd}`")
+            chan = self.bot.get_channel(self.bot.serverCfg[str(guild.id)]["server"]["modChannel"])
+            await chan.send(embed=e)
+        else:
+            e = discord.Embed(title="<< Member Join Event >>", color=discord.Color.red())
+            e.add_field(inline=False, name=f"The `{flag}` flag in **{guild.name}** is set ...", 
+                value=f"but no `{channel}` was specified.")
+            e.add_field(name="You can set it up with",
+                value=f"`{self.bot.command_prefix}{setChannelCmd}`")
+            e.add_field(name="You can disable it with",
+                value=f"`{self.bot.command_prefix}{toggleCmd}`")
+            e.add_field(name="You received this message directly because no `modChannel` was specified. You can"
+                " set it up with", value=f"`{self.bot.command_prefix}setModChannel`")
+            user = guild.owner
+            await user.send(embed=e)
+
     #Listener
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -27,25 +105,15 @@ class Server(commands.Cog):
             if self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"] != "":
                 await member.send(self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"])
             if self.bot.serverCfg[str(member.guild.id)]["server"]["memberEventChannel"] != 0:
-                e = discord.Embed(color=0x32c832)
-                e.set_author(name = str(member) + " joined the server.", icon_url=member.avatar_url)
-                e.add_field(name="ID", value=str(member.id), inline=False)
+                e = discord.Embed(title="<< Member Join Event >>", color=discord.Color.green())
+                e.set_author(name=f"{member} joined the server.", icon_url=member.avatar_url)
+                e.add_field(name="ID", value=f"{member.id}", inline=False)
                 e.add_field(name="Mention", value=member.mention, inline=False)
                 chan = self.bot.get_channel(self.bot.serverCfg[str(member.guild.id)]["server"]["memberEventChannel"])
                 await chan.send(embed=e)
             else:
-                if self.bot.serverCfg[str(member.guild.id)]["server"]["modChannel"] != 0:
-                    chan = self.bot.get_channel(self.bot.serverCfg[str(member.guild.id)]["server"]["modChannel"])
-                    await chan.send("The ***logMemberEvent*** flag is set, but no ***memberEventChannel*** was specifie"
-                    "d. You can set it with `{0}setMemberEventChannel <id>` or disable ***logMemberEvent*** with `{0}to"
-                    "ggleMemberEvent`".format(self.bot.command_prefix))
-                else:
-                    user = member.guild.owner
-                    await user.send("The ***logMemberEvent*** flag in your server \"{0}\" is set, but no ***memberEvent"
-                    "Channel*** was specified. You can set it with `{1}setMemberEventChannel <id>` or disable ***logMem"
-                    "berEvent*** with `{1}toggleMemberEvent`.\nYou received this message directly because no ***modChan"
-                    "nel*** was specified. You can set it with `{1}setModChannel <id>`".format(member.guild.name, 
-                    self.bot.command_prefix))
+                await self.channelNotSpecified("Member Join", "logMemberEvent", "memberEventChannel", 
+                    "setMemberEventChannel", "toggleMemberEvent", member.guild)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -55,25 +123,16 @@ class Server(commands.Cog):
 
         if self.bot.serverCfg[str(member.guild.id)]["server"]["logMemberEvent"]:
             if self.bot.serverCfg[str(member.guild.id)]["server"]["memberEventChannel"] != 0:
-                e = discord.Embed(color=0xc83232)
-                e.set_author(name = str(member) + " left the server.", icon_url=member.avatar_url)
-                e.add_field(name="ID", value=str(member.id), inline=False)
+                e = discord.Embed(title="<< Member Leave Event >>", color=discord.Color.red())
+                e.set_author(name=f"{member} left the server.", icon_url=member.avatar_url)
+                e.add_field(name="ID", value=f"{member.id}", inline=False)
                 e.add_field(name="Mention", value=member.mention, inline=False)
+                e.add_field(name="Last known name", value=member.display_name, inline=False)
                 chan = self.bot.get_channel(self.bot.serverCfg[str(member.guild.id)]["server"]["memberEventChannel"])
                 await chan.send(embed=e)
             else:
-                if self.bot.serverCfg[str(member.guild.id)]["server"]["modChannel"] != 0:
-                    chan = self.bot.get_channel(self.bot.serverCfg[str(member.guild.id)]["server"]["modChannel"])
-                    await chan.send("The ***logMemberEvent*** flag is set, but no ***memberEventChannel*** was specifie"
-                    "d. You can set it with `{0}setMemberEventChannel <id>` or disable ***logMemberEvent*** with `{0}to"
-                    "ggleMemberEvent`".format(self.bot.command_prefix))
-                else:
-                    user = member.guild.owner
-                    await user.send("The ***logMemberEvent*** flag in your server \"{0}\" is set, but no ***memberEvent"
-                    "Channel*** was specified. You can set it with `{1}setMemberEventChannel <id>` or disable ***logMem"
-                    "berEvent*** with `{1}toggleMemberEvent`.\nYou received this message directly because no ***modChan"
-                    "nel*** was specified. You can set it with `{1}setModChannel <id>`".format(member.guild.name, 
-                    self.bot.command_prefix))
+                await self.channelNotSpecified("Member Leave", "logMemberEvent", "memberEventChannel", 
+                    "setMemberEventChannel", "toggleMemberEvent", member.guild)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -85,51 +144,29 @@ class Server(commands.Cog):
 
         if self.bot.serverCfg[str(before.guild.id)]["server"]["logMessageEvent"] and before.content != after.content:
             if self.bot.serverCfg[str(before.guild.id)]["server"]["messageEventChannel"] != 0:
-                e = discord.Embed(color=0x32c8c8)
-                e.set_author(name="{} edited a message.".format(before.author), icon_url=before.author.avatar_url)
-                e.add_field(name="Profile", value=before.author.mention, inline=False)
-                e.add_field(name="Channel", value=before.channel.mention, inline=False)
+                e = discord.Embed(color=0x32c8c8, title="<< Message Edit Event >>")
+                e.set_author(name=f"{before.author} edited a message.", icon_url=before.author.avatar_url)
+                e.add_field(name="Profile", value=before.author.mention, inline=True)
+                e.add_field(name="Channel", value=before.channel.mention, inline=True)
                 e.add_field(name="URL", value=after.jump_url, inline=False)
 
                 if len(before.content) < 1025:
                     e.add_field(name="Message before", value=before.content, inline=False)
                 else:
-                    i = 1
-                    temp = before.content
-                    while len(temp) > 1018:
-                        e.add_field(name="Message before ({})".format(i), value="{}[...]".format(temp[:1019], 
-                            inline=False))
-                        temp = temp[1019:]
-                        i += 1
-                    e.add_field(name="Message before ({})".format(i), value="{}".format(temp, inline=False))
+                    e.add_field(name="Message before", value=before.content[:1024], inline=False)
+                    e.add_field(name="[...]", value=before.content[1024:], inline=False)
 
                 if len(after.content) < 1025:
                     e.add_field(name="Message after", value=after.content, inline=False)
                 else:
-                    i = 1
-                    temp = after.content
-                    while len(temp) > 1018:
-                        e.add_field(name="Message after ({})".format(i), value="{}[...]".format(temp[:1019], 
-                            inline=False))
-                        temp = temp[1019:]
-                        i += 1
-                    e.add_field(name="Message after ({})".format(i), value="{}".format(temp, inline=False))
+                    e.add_field(name="Message after", value=after.content[:1024], inline=False)
+                    e.add_field(name="[...]", value=after.content[1024:], inline=False)
 
                 chan = self.bot.get_channel(self.bot.serverCfg[str(before.guild.id)]["server"]["messageEventChannel"])
                 await chan.send(embed=e)
             else:
-                if self.bot.serverCfg[str(before.guild.id)]["server"]["modChannel"] != 0:
-                    chan = self.bot.get_channel(self.bot.serverCfg[str(before.guild.id)]["server"]["modChannel"])
-                    await chan.send("The ***logMessageEvent*** flag is set, but no ***messageEventChannel*** was specif"
-                    "ied. You can set it with `{0}setMessageEventChannel <id>` or disable ***logMessageEvent*** with `"
-                    "{0}toggleMessageEvent`".format(self.bot.command_prefix))
-                else:
-                    user = before.guild.owner
-                    await user.send("The ***logMessageEvent*** flag in your server \"{0}\" is set, but no ***messageEve"
-                    "ntChannel*** was specified. You can set it with `{1}setMessageEventChannel <id>` or disable ***log"
-                    "MessageEvent*** with `{1}toggleMessageEvent`.\nYou received this message directly because no ***mo"
-                    "dChannel*** was specified. You can set it with `{1}setModChannel <id>`".format(before.guild.name, 
-                    self.bot.command_prefix))
+                await self.channelNotSpecified("Message Edit", "logMessageEvent", "messageEventChannel", 
+                    "setMessageEventChannel", "toggleMessageEvent", before.guild)
  
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -141,133 +178,120 @@ class Server(commands.Cog):
 
         if self.bot.serverCfg[str(message.guild.id)]["server"]["logMessageEvent"]:
             if self.bot.serverCfg[str(message.guild.id)]["server"]["messageEventChannel"] != 0:
-                e = discord.Embed(color=0xc83232)
-                e.set_author(name="{}'s message got deleted.".format(message.author), icon_url=message.author.avatar_url)
-                e.add_field(name="Profile", value=message.author.mention, inline=False)
-                e.add_field(name="Channel", value=message.channel.mention, inline=False)
+                e = discord.Embed(color=0xc83232, title="<< Message Delete Event >>")
+                e.set_author(name=f"{message.author}'s message got deleted.", icon_url=message.author.avatar_url)
+                e.add_field(name="Profile", value=message.author.mention, inline=True)
+                e.add_field(name="Channel", value=message.channel.mention, inline=True)
                 
                 if message.content:
                     if len(message.content) < 1025:
                         e.add_field(name="Message", value=message.content, inline=False)
                     else:
-                        i = 1
-                        temp = message.content
-                        while len(temp) > 1018:
-                            e.add_field("Message ({})".format(i), value="{}[...]".format(temp[:1019], inline=False))
-                            temp = temp[1019:]
-                            i += 1
-                        e.add_field("Message ({})".format(i), value="{}".format(temp, inline=False))
+                        e.add_field(name="Message", value=message.content[:1024], inline=False)
+                        e.add_field(name="[...]", value=message.content[1024:], inline=False)
                 num = len(message.attachments)
                 if num > 0:
-                    e.add_field(name="Attachments", value="The message had {} attachment(s)".format(num),inline=False)
+                    e.add_field(name="Attachments", value=f"The message had {num} attachment(s)", inline=False)
                     for a in message.attachments:
                         e.add_field(name="File Name", value=a.filename, inline=False)
 
                 chan = self.bot.get_channel(self.bot.serverCfg[str(message.guild.id)]["server"]["messageEventChannel"])
                 await chan.send(embed=e)
             else:
-                if self.bot.serverCfg[str(message.guild.id)]["server"]["modChannel"] != 0:
-                    chan = self.bot.get_channel(self.bot.serverCfg[str(message.guild.id)]["server"]["modChannel"])
-                    await chan.send("The ***logMessageEvent*** flag is set, but no ***messageEventChannel*** was specif"
-                    "ied. You can set it with `{0}setMessageEventChannel <id>` or disable ***logMessageEvent*** with `"
-                    "{0}toggleMessageEvent`".format(self.bot.command_prefix))
-                else:
-                    user = message.guild.owner
-                    await user.send("The ***logMessageEvent*** flag in your server \"{0}\" is set, but no ***messageEve"
-                    "ntChannel*** was specified. You can set it with `{1}setMessageEventChannel <id>` or disable ***log"
-                    "MessageEvent*** with `{1}toggleMessageEvent`.\nYou received this message directly because no ***mo"
-                    "dChannel*** was specified. You can set it with `{1}setModChannel <id>`".format(message.guild.name, 
-                    self.bot.command_prefix))
+                await self.channelNotSpecified("Message Delete", "logMessageEvent", "messageEventChannel", 
+                    "setMessageEventChannel", "toggleMessageEvent", message.guild)
 
     @commands.command()
     @commands.guild_only()
     async def greetMe(self, ctx):
         """Prints the greeting text a user receives by joining the server"""
         self.serverCfgCheck(ctx.guild.id, "joinMessage", "")
+        e = discord.Embed(description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         temp = self.bot.serverCfg[str(ctx.guild.id)]["server"].get("joinMessage")
-        await ctx.send("No welcome message specified for this server." if temp == "" else temp)
+        if temp == "":
+            e.color = discord.Color.red()
+            e.add_field(name=f"Join message of `{ctx.guild.name}`", 
+                value="No welcome message specified for this server.")
+        else:
+            e.color = discord.Color.blue()
+            e.add_field(name=f"Join message of `{ctx.guild.name}`", value=temp)
+        await ctx.send(embed=e)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
-    async def setJoinMessage(self, ctx, *, msg : str):
+    async def setJoinMessage(self, ctx, *, msg : str = ""):
         self.serverCfgCheck(ctx.guild.id, "joinMessage", "")
         self.bot.serverCfg[str(ctx.guild.id)]["server"]["joinMessage"] = msg
         self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("joinMessage successfully changed to:\n{}".format(msg))
+        e = discord.Embed(description=ctx.author.mention, color=discord.Color.green())
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        if msg == "":
+            e.add_field(name="`joinMessage` has been successfully reset", value="No message was provided.")
+        else:
+            e.add_field(name="`joinMessage` successfully changed to:", value=msg)
+        await ctx.send(embed=e)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def toggleMessageEvent(self, ctx):
-        self.serverCfgCheck(ctx.guild.id, "logMessageEvent", False)
-        temp = not self.bot.serverCfg[str(ctx.guild.id)]["server"]["logMessageEvent"]
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["logMessageEvent"] = temp
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("logMessageEvent set to {}".format(temp))
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    async def setMessageEventChannel(self, ctx, id : int = None):
-        if id is None:
-            return await ctx.send("Please specify a channel")
-        if id not in [c.id for c in ctx.guild.channels]:
-            return await ctx.send("Channel {} does not exist on this server.".format(id))
-        self.serverCfgCheck(ctx.guild.id, "messageEventChannel", 0)
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["messageEventChannel"] = id
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("messageEventChannel successfully set.")
+        await self.toggleEvent("logMessageEvent")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def toggleMemberEvent(self, ctx):
-        self.serverCfgCheck(ctx.guild.id, "logMemberEvent", False)
-        temp = not self.bot.serverCfg[str(ctx.guild.id)]["server"]["logMemberEvent"]
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["logMemberEvent"] = temp
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("logMemberEvent set to {}".format(temp))
-
+        await self.toggleEvent("logMemberEvent")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
-    async def setMemberEventChannel(self, ctx, id : int = None):
-        if id is None:
-            return await ctx.send("Please specify a channel")
-        if id not in [c.id for c in ctx.guild.channels]:
-            return await ctx.send("Channel {} does not exist on this server.".format(id))
-        self.serverCfgCheck(ctx.guild.id, "memberEventChannel", 0)
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["memberEventChannel"] = id
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("memberEventChannel successfully set.")
+    async def setMessageEventChannel(self, ctx, channel : discord.TextChannel = None, idStr : str = None):
+        await self.setChannel(ctx, "messageEventChannel", channel, idStr)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
-    async def setModChannel(self, ctx, id : int = None):
-        if id is None:
-            return await ctx.send("Please specify a channel")
-        if id not in [c.id for c in ctx.guild.channels]:
-            return await ctx.send("Channel {} does not exist on this server.".format(id))
-        self.serverCfgCheck(ctx.guild.id, "modChannel", 0)
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["modChannel"] = id
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("modChannel successfully set.")
+    async def setMemberEventChannel(self, ctx, channel : discord.TextChannel = None, idStr : str = None):
+        await self.setChannel(ctx, "memberEventChannel", channel, idStr)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
-    async def setAnnouncementChannel(self, ctx, id : int = None):
-        if id is None:
-            return await ctx.send("Please specify a channel")
-        if id not in [c.id for c in ctx.guild.channels]:
-            return await ctx.send("Channel {} does not exist on this server.".format(id))
-        self.serverCfgCheck(ctx.guild.id, "announcementChannel", 0)
-        self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcementChannel"] = id
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
-        await ctx.send("announcementChannel successfully set.")
+    async def setModChannel(self, ctx, channel : discord.TextChannel = None, idStr : str = None):
+        await self.setChannel(ctx, "modChannel", channel, idStr)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def setAnnouncementChannel(self, ctx, channel : discord.TextChannel = None, idStr : str = None):
+        await self.setChannel(ctx, "announcementChannel", channel, idStr)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def resetMessageEventChannel(self, ctx):
+        await self.resetChannel(ctx, "messageEventChannel")
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def resetMemberEventChannel(self, ctx):
+        await self.resetChannel(ctx, "memberEventChannel")    
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def resetModChannel(self, ctx):
+        await self.resetChannel(ctx, "modChannel")    
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def resetAnnouncementChannel(self, ctx):
+        await self.resetChannel(ctx, "announcementChannel")    
 
     @commands.command()
     @commands.guild_only()
@@ -275,16 +299,32 @@ class Server(commands.Cog):
     async def announce(self, ctx, *, msg : str = None):
         self.serverCfgCheck(ctx.guild.id, "announcementChannel", 0)
         self.serverCfgCheck(ctx.guild.id, "announcements", 0)
+        e = discord.Embed()
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         if self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcementChannel"] == 0:
-            return await ctx.send("***announcementChannel*** is not set up yet. You can set it with `{0}setAnnouncement"
-            "Channel <id>`".format(self.bot.command_prefix))
-        if msg is None:
-            return await ctx.send("Please specify a message to announce")
-        e = discord.Embed(color=0x6428c8)
+            e.title = "<< Announcement >>"
+            e.color = discord.Color.red()
+            e.add_field(inline=False, name=f"`announcementChannel`", 
+                value=f"is not set.")
+            e.add_field(name="You can set it up with",
+                value=f"`{self.bot.command_prefix}setAnnouncementChannel`")
+            return await ctx.send(embed=e)
+        if msg is None:            
+            e.title = "<< Announcement >>"
+            e.color = discord.Color.red()
+            e.add_field(inline=False, name=f"No message given", 
+                value=f"Please specify a message to announce.")
+            return await ctx.send(embed=e)
         num = self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcements"] + 1
         self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcements"] = num
         self.bot.writeJSON("server.json", self.bot.serverCfg)
-        e.add_field(name="#{} - {} (UTC)".format(num, datetime.utcnow().strftime("%d.%m.%Y")), value=msg, inline=False)
+        e.title = f"<< Announcement #{num} >>"
+        time = datetime.utcnow().strftime('%d.%m.%Y')
+        if len(msg) < 1025:
+            e.add_field(name=f"{time} (UTC)", value=msg, inline=False)
+        else:
+            e.add_field(name=f"{time} (UTC)", value=msg[:1024], inline=False)
+            e.add_field(name="[...]", value=msg[1024:], inline=False)
         chan = self.bot.get_channel(self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcementChannel"])
         await chan.send(embed=e)
         
