@@ -30,10 +30,9 @@ class Akuma(commands.Bot):
         #loading extensions given in cfg
         for ext in self.cfg["extensions"]:
             try:
-                self.load_extension("extensions." + ext)
+                self.load_extension(f"extensions.{ext}")
             except Exception as e:
-                print("Failed to load extension \"{}\": {}".format(ext,
-                    "{} ({})".format(type(e).__name__, e)))
+                print(f"Failed to load extension '{ext}': {f'{type(e).__name__} ({e})'}")
         
     def run(self):
         super().run(self.cfg["token"])

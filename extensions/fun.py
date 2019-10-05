@@ -91,7 +91,7 @@ class Fun(commands.Cog):
         e.color=discord.Color.blue()
         com = random.choice(["r", "p", "s"])
         e.add_field(name="You", value=emote[user], inline=True)
-        e.add_field(name="Computers", value=emote[com], inline=True)
+        e.add_field(name="Computer", value=emote[com], inline=True)
         if (user == "r" and com == "p") or (user == "p" and com == "s") or (user == "s" and com == "r"):
             e.add_field(name=":moyai::newspaper::scissors:", value="You lose")
         elif (user == "r" and com == "s") or (user == "p" and com == "r") or (user == "s" and com == "p"):
