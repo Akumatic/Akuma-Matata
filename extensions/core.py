@@ -5,11 +5,14 @@ class Core(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def detectSetGame(self):
+        return f" | {self.bot.cfg['game']}" if self.bot.cfg["game"] != "" else ""
+
     #Listener
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is running!")
-        game = self.bot.cfg["prefix"] + "help" + (" | " + self.bot.cfg["game"] if self.bot.cfg["game"] != "" else "")
+        game = f"{self.bot.cfg['prefix']}help{self.detectSetGame()}"
         await self.bot.change_presence(status=discord.Status.online, activity=discord.Game(name=game))
 
     @commands.Cog.listener()
@@ -24,22 +27,25 @@ class Core(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        e = discord.Embed(color=discord.Color.red(), title="Error")
         if isinstance(error, commands.CommandNotFound):
-            return #await ctx.author.send("The command you tried to use does not exist.")
+            #e.add_field(name="Command Not Found", value="The command you tried to use does not exist.")
+            return #await ctx.author.send(embed=e)
         if isinstance(error, commands.NotOwner):
-            return await ctx.send("Only the owner of this bot can use this command.")
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You don't have the necessary permissions to use this command.")
+            e.add_field(name="Not The Owner", value="Only the owner of this bot can use this command.")
+            return await ctx.send(embed=e)
         if isinstance(error, commands.NoPrivateMessage):
-            return await ctx.send("This command is only usable in a server.")
+            e.add_field(name="No Direct Message", value="This command is only usable in a server.")
+            return await ctx.send(embed=e)
+        if isinstance(error, commands.MissingPermissions):
+            e.add_field(name="Missing Permissions", value="You don't have the permissions to use this command.")
+            return await ctx.send(embed=e)
         info = await self.bot.application_info()
         user = info.owner
         if user is not None:
-            e = discord.Embed(color=0xc83232)
-            e.set_author(name="Error Log")
             e.add_field(name="Source", value=ctx.message.channel, inline=False)
-            e.add_field(name="Trigger", value=ctx.message.content,inline=False)
-            e.add_field(name="Trace", value=error, inline=False)
+            e.add_field(name="Trigger", value=ctx.message.content, inline=False)
+            e.add_field(name="Error Message", value=error, inline=False)
             await user.send(embed=e)
 
     #Commands
@@ -50,9 +56,9 @@ class Core(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def changeGame(self, ctx, *, msg : str = None):
+    async def setGame(self, ctx, *, msg : str = None):
         self.bot.cfg["game"] = "" if msg == None else msg
-        game = self.bot.cfg["prefix"] + "help" + (" | " + self.bot.cfg["game"] if self.bot.cfg["game"] != "" else "")
+        game = f"{self.bot.cfg['prefix']}help{self.detectSetGame()}"
         await self.bot.change_presence(status=discord.Status.online, activity=discord.Game(name=game))
 
     @commands.command(hidden=True)
@@ -62,16 +68,23 @@ class Core(commands.Cog):
         
         First argument is the name of python file without .py extension.
         (Optional) If second argument is True, it will be autoloaded"""
+        e = discord.Embed(title="Loading Extension")
         if ext == None:
-            return await ctx.send("No extension specified")
+            e.color = discord.Color.red()
+            e.add_field(name="No extension specified", value="Please specify the name of the extension.")
+            return await ctx.send(embed=e)
         try:
             self.bot.load_extension("extensions." + ext)
-            await ctx.send("Loaded " + ext)
-            if json:
+            e.color = discord.Color.green()
+            e.add_field(name="Extension loaded", value=f"`{ext}` successfully loaded.", inline=False)
+            if json and ext not in self.bot.cfg["extensions"]:
                 self.bot.cfg["extensions"].append(ext)
                 self.bot.writeJSON("settings.json", self.bot.cfg)
-        except Exception as e:
-            await ctx.send("Failed to load extension \"{}\": {}".format(ext, "{} ({})".format(type(e).__name__, e)))
+                e.add_field(name="Autoload", value=f"`{ext}` was added to autostart extensions.", inline=False)
+        except Exception as ex:
+            e.color = discord.Color.red()
+            e.add_field(name=f"Failed to load extension `{ext}`", value=f"{type(ex).__name__} ({ex})")
+        await ctx.send(embed=e)
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -80,33 +93,51 @@ class Core(commands.Cog):
         
         First argument is the name of the extension.
         (Optional) If second argument is True, it will be removed from autoload"""
+        e = discord.Embed(title="Unloading Extension")
         if ext == None:
-            return await ctx.send("No extension specified")
+            e.color = discord.Color.red()
+            e.add_field(name="No extension specified", value="Please specify the name of the extension.")
+            return await ctx.send(embed=e)
         if ("extensions." + ext) in self.bot.extensions:
             self.bot.unload_extension("extensions." + ext)
-            await ctx.send("Unloaded " + ext)
-            if json:
+            e.color = discord.Color.green()
+            e.add_field(name="Extension unloaded", value=f"`{ext}` successfully unloaded.", inline=False)
+            if json and ext in self.bot.cfg["extensions"]:
                 self.bot.cfg["extensions"].remove(ext)
                 self.bot.writeJSON("settings.json", self.bot.cfg)
+                e.add_field(name="Autoload", value=f"`{ext}` was removed from autostart extensions.", inline=False)
         else:
-            await ctx.send("Extension {} not loaded".format(ext))
+            e.color = discord.Color.red()
+            e.add_field(name=f"Failed to unload `{ext}`", value=f"`{ext}` not loaded")
+        await ctx.send(embed=e)
 
     @commands.command(hidden=True)
     @commands.is_owner()
     async def reload(self, ctx, ext : str = None):
-        """Reloads an extension"""    
+        """Reloads an extension""" 
+        e = discord.Embed(title="Reloading Extension: Unloading")
         if ext == None:
-            return await ctx.send("No extension specified")
+            e.color = discord.Color.red()
+            e.add_field(name="No extension specified", value="Please specify the name of the extension.")
+            return await ctx.send(embed=e)
+
         if ("extensions." + ext) in self.bot.extensions:
             self.bot.unload_extension("extensions." + ext)
-            await ctx.send("Unloaded " + ext)
+            e.color = discord.Color.green()
+            e.add_field(name="Extension unloaded", value=f"`{ext}` successfully unloaded.", inline=False)
+            await ctx.send(embed=e)
+            e = discord.Embed(title="Reloading Extension: Loading")
             try:
                 self.bot.load_extension("extensions." + ext)
-                await ctx.send("Loaded " + ext)
-            except Exception as e:
-                await ctx.send("Failed to load extension \"{}\": {}".format(ext, "{} ({})".format(type(e).__name__, e)))
+                e.color = discord.Color.green()
+                e.add_field(name="Extension loaded", value=f"`{ext}` successfully loaded.", inline=False)
+            except Exception as ex:
+                e.color = discord.Color.red()
+                e.add_field(name=f"Failed to load extension `{ext}`", value=f"{type(ex).__name__} ({ex})")
         else:
-            await ctx.send("Extension {} not loaded".format(ext))
+            e.color = discord.Color.red()
+            e.add_field(name=f"Failed to unload `{ext}`", value=f"`{ext}` not loaded")
+        await ctx.send(embed=e)
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -116,8 +147,10 @@ class Core(commands.Cog):
         temp = None
         for ext in self.bot.extensions:
             temp = ext.split(".")
-            string.append(temp[1] if len(temp) > 1 else temp[0])
-        await ctx.send("Loaded extensions: {}".format(", ".join(string)))
+            string.append(temp[-1] if len(temp) > 1 else temp[0])
+        e = discord.Embed(color=discord.Color.blue())
+        e.add_field(name="Loaded extensions", value=', '.join(string))
+        await ctx.send(embed=e)
 
 def setup(bot):
     bot.add_cog(Core(bot))

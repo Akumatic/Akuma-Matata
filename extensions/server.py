@@ -237,13 +237,13 @@ class Server(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def toggleMessageEvent(self, ctx):
-        await self.toggleEvent("logMessageEvent")
+        await self.toggleEvent(ctx, "logMessageEvent")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def toggleMemberEvent(self, ctx):
-        await self.toggleEvent("logMemberEvent")
+        await self.toggleEvent(ctx, "logMemberEvent")
 
     @commands.command()
     @commands.guild_only()
