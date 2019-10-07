@@ -16,7 +16,7 @@ class Akuma(commands.Bot):
             
         #configuration objects for internal use
         self.cfg = self.loadJSON("settings.json", {"token": "", "prefix": ">>", "description": "A Discord Bot written b"
-            "y Akuma#7346", "game": "", "extensions": ["core", "server", "fun", "user"]})
+            "y Akuma#7346", "game": "", "extensions": ["core", "server", "fun", "user", "updater"]})
         if self.cfg["token"] == "":
             self.cfg["token"] = input("Please insert the Bot Token: ")
             self.writeJSON("settings.json", self.cfg)
@@ -36,7 +36,7 @@ class Akuma(commands.Bot):
         
     def run(self):
         super().run(self.cfg["token"])
-        print("Bot running")
+        print("Bot stopped")
         
     def loadJSON(self, s : str, default : dict = None):
         if not os.path.isfile(os.path.join(self.cfgPath, s)):

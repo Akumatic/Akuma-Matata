@@ -5,6 +5,11 @@ from datetime import datetime
 class Server(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.update = {
+            "allowUpdate": True,
+            "url": "https://raw.github.com/Akumatic/Akuma-Matata/master/extensions/server.py",
+            "private": False
+        }
 
     def serverCfgCheck(self, id : int, key : str, default):
         if str(id) not in self.bot.serverCfg:

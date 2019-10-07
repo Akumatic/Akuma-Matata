@@ -4,6 +4,11 @@ import discord, io
 class Core(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.update = {
+            "allowUpdate": True,
+            "url": "https://raw.github.com/Akumatic/Akuma-Matata/master/extensions/core.py",
+            "private": False
+        }
 
     def detectSetGame(self):
         return f" | {self.bot.cfg['game']}" if self.bot.cfg["game"] != "" else ""
@@ -52,6 +57,9 @@ class Core(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def stop(self, ctx):
+        ext = self.bot.extensions
+        while len(ext) > 0:
+            self.bot.unload_extension(list(ext.keys())[0])
         await self.bot.close()
 
     @commands.command()

@@ -4,6 +4,11 @@ from discord.ext import commands
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.update = {
+            "allowUpdate": True,
+            "url": "https://raw.github.com/Akumatic/Akuma-Matata/master/extensions/fun.py",
+            "private": False
+        }
 
     @commands.command()
     async def ping(self, ctx):

@@ -4,6 +4,11 @@ import discord, io
 class User(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.update = {
+            "allowUpdate": True,
+            "url": "https://raw.github.com/Akumatic/Akuma-Matata/master/extensions/user.py",
+            "private": False
+        }
 
     @commands.Cog.listener()
     async def on_message(self, message):
