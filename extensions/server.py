@@ -347,7 +347,6 @@ class Server(commands.Cog):
     async def serverSettings(self, ctx):
         e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue())
         e.set_thumbnail(url=ctx.guild.icon_url)
-        #print(ctx.guild.icon_url)
         id = str(ctx.guild.id)
         d = self.bot.serverCfg[id]["server"]
 
@@ -378,7 +377,7 @@ class Server(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def serverInfo(self, ctx):
-        e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue(), description=ctx.guild.name)
+        e = discord.Embed(title="<< Server Info >>", color=discord.Color.blue(), description=ctx.guild.name)
         e.set_thumbnail(url=ctx.guild.icon_url)
         cntMember = 0
         cntBots = 0
@@ -422,6 +421,150 @@ class Server(commands.Cog):
             e.add_field(name="Member not found", value="The Member you specified does not exist on this server.")
         await ctx.send(embed=e)
         
+    @commands.command()
+    @commands.guild_only()
+    async def iam(self, ctx, *, role: typing.Union[discord.Role, str] = None):
+        self.serverCfgCheck(ctx.guild.id, "sar", {"default": []})
+        member = ctx.guild.get_member(ctx.author.id)
+        e = discord.Embed(title="<< Assign self-assignable role >>")
+        if role is None:
+            e.color = discord.Color.red()
+            e.add_field(name="No Role", value="Please specify a role to assign.")
+        elif isinstance(role, discord.Role):
+            for g in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"]:
+                if role.id in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]:
+                    roles = member.roles
+                    if role in roles:
+                        e.color = discord.Color.red()
+                        e.add_field(name="Role already assigned", value=f"You have the role {role} already.")
+                        return await ctx.send(embed=e)
+                    e.color = discord.Color.blue()
+                    if g != "default":
+                        for id in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]:
+                            if id != role.id:
+                                r = ctx.guild.get_role(id)
+                                if r in roles:
+                                    roles.remove(r)
+                                    e.add_field(name="Unassigned role", value=f"You don't have the role {r} anymore.",
+                                        inline=False)
+                    roles.append(role)
+                    await member.edit(roles=roles)
+                    e.add_field(name="Assigned role", value=f"You have now the role {role}.")
+                    return await ctx.send(embed=e)
+        else:
+            e.color = discord.Color.red()
+            e.add_field(name="Role does not exist", value="The given role does not exist on this server.")
+        await ctx.send(embed=e)
+
+    @commands.command(aliases=["iamn"])
+    @commands.guild_only()
+    async def iamnot(self, ctx, *, role: typing.Union[discord.Role, str] = None):
+        self.serverCfgCheck(ctx.guild.id, "sar", {"default": []})
+        member = ctx.guild.get_member(ctx.author.id)
+        e = discord.Embed(title="<< Unassign self-assignable role >>")
+        if role is None:
+            e.color = discord.Color.red()
+            e.add_field(name="No Role", value="Please specify a role to unassign.")
+        elif isinstance(role, discord.Role):
+            roles = member.roles
+            if role in roles:
+                roles.remove(role)
+                await member.edit(roles=roles)
+                e.color = discord.Color.blue()
+                e.add_field(name="Role unassigned", value=f"You don't have the role {role} anymore.")
+            else:
+                e.color = discord.Color.red()
+                e.add_field(name="Role not assigned", value=f"You don't have the role {role}.")
+        else:
+            e.color = discord.Color.red()
+            e.add_field(name="Role does not exist", value="The given role does not exist on this server.")
+        await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    async def asar(self, ctx, *, role: typing.Union[discord.Role, str] = None, exclusive: str = None):
+        self.serverCfgCheck(ctx.guild.id, "sar", {"default": []})
+        e = discord.Embed(title="<< Add self-assignable role >>")
+        if role is None:
+            e.color = discord.Color.red()
+            e.add_field(name="No Role", value="Please specify a role to add.")
+        elif isinstance(role, discord.Role):
+            for g in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"]:
+                if role.id in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]:
+                    e.color = discord.Color.red()
+                    e.add_field(name="Role already in List",value=f"The specified role is already in group {g}")
+                    return await ctx.send(embed=e)
+            if role >= ctx.guild.get_member(self.bot.user.id).top_role:
+                e.color = discord.Color.red()
+                e.add_field(name="Missing Permissions", value=f"The bot's highest role is below or is {role}.")
+                return await ctx.send(embed=e)
+            if role < ctx.author.top_role or ctx.guild.get_member(ctx.author.id).guild_permissions.administrator:
+                e.color = discord.Color.blue()
+                if exclusive == None:
+                    self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"]["default"].append(role.id)
+                    self.bot.writeJSON("server.json", self.bot.serverCfg)
+                    e.add_field(name="Successfully added", value=f"{role} added to default group")
+                else:  
+                    if exclusive not in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"]:
+                        self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][exclusive] = []
+                    self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][exclusive].append(role.id)
+                    e.add_field(name="Created Exclusive Group", value=f"Added Group {exclusive}", inline=True)
+                    self.bot.writeJSON("server.json", self.bot.serverCfg)
+                    e.add_field(name="Role added", value=f"{role} added to group {exclusive}")
+            else:
+                e.color = discord.Color.red()
+                e.add_field(name="Missing Permissions", value="You can only add roles lower than your highest role.")
+        else:
+            e.color = discord.Color.red()
+            e.add_field(name="Role does not exist", value="The given role does not exist on this server.")
+        await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    async def rsar(self, ctx, *, role: typing.Union[discord.Role, str] = None):
+        self.serverCfgCheck(ctx.guild.id, "sar", {"default": []})
+        e = discord.Embed(title="<< Remove self-assignable role >>")
+        if role is None:
+            e.color = discord.Color.red()
+            e.add_field(name="No Role", value="Please specify a role to remove.")
+        elif isinstance(role, discord.Role):
+            for g in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"]:
+                if role.id in self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]:
+                    self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g].remove(role.id)
+                    e.color = discord.Color.blue()
+                    e.add_field(name="Role removed", value=f"{role} removed from {g}")
+                    if g != "default" and len(self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]) == 0:
+                        del self.bot.serverCfg[str(ctx.guild.id)]["server"]["sar"][g]
+                        e.add_field(name="Group removed", value=f"{g} is empty now and got removed")
+                    self.bot.writeJSON("server.json", self.bot.serverCfg)
+                    return await ctx.send(embed=e)
+            e.color = discord.Color.red()
+            e.add_field(name="Role not self-assignable", value="The role is not self-assignable.")
+        else:
+            e.color = discord.Color.red()
+            e.add_field(name="Role does not exist", value="The given role does not exist on this server.")
+        await ctx.send(embed=e)
+    
+    @commands.command()
+    @commands.guild_only()
+    async def lsar(self, ctx):
+        self.serverCfgCheck(ctx.guild.id, "sar", {"default": []})
+        e = discord.Embed(title="<< List self-assignable role >>", color=discord.Color.blue())
+        id = str(ctx.guild.id)
+        if len(self.bot.serverCfg[id]["server"]["sar"]) == 1 and \
+            len(self.bot.serverCfg[id]["server"]["sar"]["default"]) == 0:
+            e.add_field(name="No self-assignable roles found", value="There are no self-assignable roles yet.")
+        else:
+            for g in self.bot.serverCfg[id]["server"]["sar"]:
+                s = ", ".join(ctx.guild.get_role(x).name for x in self.bot.serverCfg[id]["server"]["sar"][g])
+                if g == "default":
+                    e.add_field(inline=False, name="default", value=s if s != "" else "No self-assignable roles")
+                else:
+                    e.add_field(inline=False, name=f"{g} (Exclusive)", value=s)
+        await ctx.send(embed=e)
+
 #Setup
 def setup(bot):
     bot.add_cog(Server(bot))
