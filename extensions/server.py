@@ -378,28 +378,50 @@ class Server(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def serverInfo(self, ctx):
-        e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue())
+        e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue(), description=ctx.guild.name)
+        e.set_thumbnail(url=ctx.guild.icon_url)
+        cntMember = 0
+        cntBots = 0
+        for m in ctx.guild.members:
+            if m.bot:
+                cntBots += 1
+            else:
+                cntMember += 1
+
+        e.add_field(name="Guild ID", value=ctx.guild.id)
+        e.add_field(name="Owner", value=ctx.guild.owner.mention)
+        e.add_field(name="Created at (UTC)", value=ctx.guild.created_at.strftime("%b %d %Y - %H:%M"))
+        e.add_field(name="Member Count", value=f"{cntMember} User, {cntBots} Bots")
+        e.add_field(name="# of Channels", 
+            value=f"{len(ctx.guild.text_channels)} Text, {len(ctx.guild.voice_channels)} Voice")
+        e.add_field(name="Voice Chat Region", value=ctx.guild.region)
+        e.add_field(name="Description", value=ctx.guild.description, inline=False)
+        await ctx.send(embed=e)
 
     @commands.command()
     @commands.guild_only()
     async def serverIcon(self, ctx):
-        e = discord.Embed(title="<< Server Icon >>", color=discord.Color.blue(), description=ctx.author.mention)
-        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        e = discord.Embed(title="<< Server Icon >>", color=discord.Color.blue())
         e.set_image(url=ctx.guild.icon_url)
         await ctx.send(embed=e)
 
     @commands.command()
     @commands.guild_only()
     async def avatar(self, ctx, member:typing.Union[discord.Member, str] = None):
-        e = discord.Embed(title="<< Member Avatar >>", description=ctx.author.mention)
-        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
-        if member == None or not isinstance(member, discord.Member):
+        e = discord.Embed(title="<< Member Avatar >>")
+        if member == None:
+            e.description = ctx.author.mention
+            e.color=discord.Color.blue()
+            e.set_image(url=ctx.author.avatar_url)
+        elif isinstance(member, discord.Member):
+            e.description = member.mention
+            e.color=discord.Color.blue()
+            e.set_image(url=member.avatar_url)
+        else:
             e.color=discord.Color.red()
             e.add_field(name="Member not found", value="The Member you specified does not exist on this server.")
-            return await ctx.send(embed=e)
-        e.color=discord.Color.blue()
-        e.set_image(url=member.avatar_url)
         await ctx.send(embed=e)
+        
 #Setup
 def setup(bot):
     bot.add_cog(Server(bot))
