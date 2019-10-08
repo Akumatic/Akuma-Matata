@@ -1,4 +1,4 @@
-import discord, random
+import discord, random, typing
 from discord.ext import commands
 from datetime import datetime
 
@@ -12,15 +12,20 @@ class Server(commands.Cog):
         }
 
     def serverCfgCheck(self, id : int, key : str, default):
+        change = False
         if str(id) not in self.bot.serverCfg:
             self.bot.serverCfg[str(id)] = {}
+            change = True
         if "server" not in self.bot.serverCfg[str(id)]:
             self.bot.serverCfg[str(id)]["server"] = {}
+            change = True
         if key not in self.bot.serverCfg[str(id)]["server"]:
             self.bot.serverCfg[str(id)]["server"][key] = default
-        self.bot.writeJSON("server.json", self.bot.serverCfg)
+            change = True
+        if change:
+            self.bot.writeJSON("server.json", self.bot.serverCfg)
 
-    def getCheckOrX(self, b: bool = False):
+    def getCheckOrX(self, b: bool):
         return ":white_check_mark:" if b else ":x:"
 
     async def toggleEvent(self, ctx, type: str):
@@ -332,7 +337,69 @@ class Server(commands.Cog):
             e.add_field(name="[...]", value=msg[1024:], inline=False)
         chan = self.bot.get_channel(self.bot.serverCfg[str(ctx.guild.id)]["server"]["announcementChannel"])
         await chan.send(embed=e)
-        
+
+    def getChannelMention(self, id: str, s: str):
+        channelID = self.bot.serverCfg[id]["server"][s]
+        return "Not set" if channelID == 0 else self.bot.get_channel(channelID).mention
+
+    @commands.command()
+    @commands.guild_only()
+    async def serverSettings(self, ctx):
+        e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue())
+        e.set_thumbnail(url=ctx.guild.icon_url)
+        #print(ctx.guild.icon_url)
+        id = str(ctx.guild.id)
+        d = self.bot.serverCfg[id]["server"]
+
+        s = ""
+        channel = ["modChannel", "messageEventChannel", "memberEventChannel", "announcementChannel"]
+        for c in channel:
+            self.serverCfgCheck(ctx.guild.id, c, 0)
+            s = "\n".join([s, f"`{c}` : {self.getChannelMention(id, c)}"])
+        e.add_field(name="Channel", value=s, inline=False)
+
+        s = ""
+        flags = ["logMessageEvent", "logMemberEvent"]
+        for f in flags:
+            self.serverCfgCheck(ctx.guild.id, f, False)
+            s = "\n".join([s, f"`{f}` : {self.getCheckOrX(d[f])}"])
+        e.add_field(name="Event Flags", value=s, inline=False)
+
+        s = ""
+        other = {"# of `announcements`": ["announcements", 0]}
+        for o in other:
+            self.serverCfgCheck(ctx.guild.id, other[o][0], other[o][1])
+            s = "\n".join([s, f"{o} : {d[other[o][0]]}"])
+        e.add_field(name="Other", value=s, inline=False)
+
+        e.add_field(name="`joinMessage`", value=d["joinMessage"] if d["joinMessage"] != "" else "Not set", inline=False)
+        await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.guild_only()
+    async def serverInfo(self, ctx):
+        e = discord.Embed(title="<< Server Settings >>", color=discord.Color.blue())
+
+    @commands.command()
+    @commands.guild_only()
+    async def serverIcon(self, ctx):
+        e = discord.Embed(title="<< Server Icon >>", color=discord.Color.blue(), description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        e.set_image(url=ctx.guild.icon_url)
+        await ctx.send(embed=e)
+
+    @commands.command()
+    @commands.guild_only()
+    async def avatar(self, ctx, member:typing.Union[discord.Member, str] = None):
+        e = discord.Embed(title="<< Member Avatar >>", description=ctx.author.mention)
+        e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
+        if member == None or not isinstance(member, discord.Member):
+            e.color=discord.Color.red()
+            e.add_field(name="Member not found", value="The Member you specified does not exist on this server.")
+            return await ctx.send(embed=e)
+        e.color=discord.Color.blue()
+        e.set_image(url=member.avatar_url)
+        await ctx.send(embed=e)
 #Setup
 def setup(bot):
     bot.add_cog(Server(bot))

@@ -50,7 +50,7 @@ class Core(commands.Cog):
         if user is not None:
             e.add_field(name="Source", value=ctx.message.channel, inline=False)
             e.add_field(name="Trigger", value=ctx.message.content, inline=False)
-            e.add_field(name="Error Message", value=error, inline=False)
+            e.add_field(name="Error", value=f"{type(error).__name__} ({error})", inline=False)
             await user.send(embed=e)
 
     #Commands
