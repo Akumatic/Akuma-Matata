@@ -12,11 +12,15 @@ class Updater(commands.Cog):
         self.cfg = self.bot.loadJSON("updater.json", {"token":""})
 
     def updaterCfgCheck(self, key : str, default):
+        change = False
         if key not in self.cfg[key]:
-            self.bot.serverCfg[key] = default
-        self.bot.writeJSON("updater.json", self.serverCfg)
+            self.cfg[key] = default
+            change = True
+        if change:
+            self.bot.writeJSON("updater.json", self.cfg)
 
     @commands.command()
+    @commands.is_owner()
     async def setPrivateToken(self, ctx, token: str = None):
         self.updaterCfgCheck("token", "")
         e = discord.Embed(title="<< Set Private Token >>")
@@ -24,20 +28,21 @@ class Updater(commands.Cog):
             e.color = discord.Color.red()
             e.add_field(name="No Token given", value="Please spcify the token.")
             return await ctx.send(embed=e)
-        await ctx.message.delete()
         e.color = discord.Color.green()
         self.cfg["token"] = token
-        self.bot.writeJSON("updater.json", self.serverCfg)
+        self.bot.writeJSON("updater.json", self.cfg)
         e.add_field(name="Token set", value="The given token was stored successfully.")
         await ctx.send(embed=e)
     
     def getRequest(self, update: dict):
+        self.updaterCfgCheck("token", "")
         r = urllib.request.Request(update["url"])
-        if update["private"]:
+        if update["private"] and self.cfg["token"] != "":
             r.add_header("Authorization", f"token {self.cfg['token']}")
         return r
 
     @commands.command()
+    @commands.is_owner()
     async def update(self, ctx):
         e = discord.Embed(title="<< Updating Modules >>")
         if sys.platform == "win32":
