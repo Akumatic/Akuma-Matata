@@ -45,13 +45,10 @@ class Core(commands.Cog):
         if isinstance(error, commands.MissingPermissions):
             e.add_field(name="Missing Permissions", value="You don't have the permissions to use this command.")
             return await ctx.send(embed=e)
-        info = await self.bot.application_info()
-        user = info.owner
-        if user is not None:
-            e.add_field(name="Source", value=ctx.message.channel, inline=False)
-            e.add_field(name="Trigger", value=ctx.message.content, inline=False)
-            e.add_field(name="Error", value=f"{type(error).__name__} ({error})", inline=False)
-            await user.send(embed=e)
+        e.add_field(name="Source", value=ctx.message.channel, inline=False)
+        e.add_field(name="Trigger", value=ctx.message.content, inline=False)
+        e.add_field(name="Error", value=f"{type(error).__name__} ({error})", inline=False)
+        await ctx.send(embed=e)
 
     #Commands
     @commands.command()

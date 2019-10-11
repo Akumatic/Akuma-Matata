@@ -131,7 +131,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def decide(self, ctx, *, msg: str = None):
-        """Decides between given options. Every option should be separated by a ','"""
+        """Decides between given options. Every option should be separated by ' or '"""
         e = discord.Embed(description=ctx.author.mention)
         e.set_author(name=f"{ctx.author.display_name} ({ctx.author})", icon_url=ctx.author.avatar_url)
         if msg == None:
@@ -139,12 +139,13 @@ class Fun(commands.Cog):
             e.color = discord.Color.red()
             e.add_field(name="No Options given", value="Please give at least one option")
             return await ctx.send(embed=e)
-        msg = msg.split(",")
+        msg = msg.split(" or ")
         e.color = discord.Color.blue()
         e.title = f"<< Decide between {len(msg)} options >>"
         for i in range(len(msg)):
             e.add_field(name=f"Option {i+1}", value=msg[i])
-        e.add_field(name="Decision", value=random.choice(msg))
+        decision = random.choice(msg)
+        e.add_field(name="Decision", value="''" if decision == "" else decision, inline=False)
         await ctx.send(embed=e)
 
 #Setup

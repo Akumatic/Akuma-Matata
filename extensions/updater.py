@@ -40,16 +40,22 @@ class Updater(commands.Cog):
     @commands.command()
     async def update(self, ctx):
         e = discord.Embed(title="<< Updating Modules >>")
+        if sys.platform == "win32":
+            e.color = discord.Color.red()
+            e.add_field(name="Currently not supported", value="Updating on Windows is currently disabled.")
+            return await ctx.send(embed=e)
         cog = None
         extensions = self.bot.extensions
-        botRootDir = os.path.sep.join(os.path.abspath(sys.argv[0]).split(os.path.sep)[:-1])
+        botRootDir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        l = []
         for ext in extensions:
+            l.append(ext)
+        for ext in l:
             temp = ext.split(".")
             cog = self.bot.get_cog(temp[-1].capitalize())
             if cog is not None and hasattr(cog, "update"):
                 if cog.update["allowUpdate"]:
                     path = f"{os.path.join(botRootDir, *temp)}.py"
-                    #print(f"Comparing {path} with {cog.update['url']}")
                     try:
                         local = urllib.request.urlopen(f"file://{path}").read().decode("utf-8")
                         remote = urllib.request.urlopen(self.getRequest(cog.update)).read().decode("utf-8")
