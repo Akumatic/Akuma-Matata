@@ -112,8 +112,11 @@ class Server(commands.Cog):
         self.serverCfgCheck(member.guild.id, "modChannel", 0)
 
         if self.bot.serverCfg[str(member.guild.id)]["server"]["logMemberEvent"]:
-            if self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"] != "":
-                await member.send(self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"])
+            try:
+                if self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"] != "":
+                    await member.send(self.bot.serverCfg[str(member.guild.id)]["server"]["joinMessage"])
+            except discord.errors.Forbidden:
+                pass
             if self.bot.serverCfg[str(member.guild.id)]["server"]["memberEventChannel"] != 0:
                 e = discord.Embed(title="<< Member Join Event >>", color=discord.Color.green())
                 e.set_author(name=f"{member} joined the server.", icon_url=member.avatar_url)
